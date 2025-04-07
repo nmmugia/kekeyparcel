@@ -1,9 +1,7 @@
 import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
-import { writeFile } from "fs/promises"
-import { join } from "path"
-import { v4 as uuidv4 } from "uuid"
+import { uploadFile } from "@/lib/s3-upload"
 
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions)
@@ -20,20 +18,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "No file uploaded" }, { status: 400 })
     }
 
+    // Convert file to buffer
     const bytes = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
 
-    // Create unique filename
-    const fileExtension = file.name.split(".").pop()
-    const fileName = `${uuidv4()}.${fileExtension}`
-
-    // Define upload directory and path
-    const uploadDir = join(process.cwd(), "public", "uploads")
-    const filePath = join(uploadDir, fileName)
-    const fileUrl = `/uploads/${fileName}`
-
-    // Write file to disk
-    await writeFile(filePath, buffer)
+    // Upload file to S3 or local storage
+    const fileUrl = await uploadFile(buffer, file.name, file.type)
 
     return NextResponse.json({ url: fileUrl })
   } catch (error) {

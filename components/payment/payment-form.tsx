@@ -10,7 +10,6 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Checkbox } from "@/components/ui/checkbox"
 import { formatCurrency } from "@/lib/utils"
 import { ErrorMessage } from "@/components/error-message"
 import { LoadingSpinner } from "@/components/loading-spinner"
@@ -92,14 +91,6 @@ export default function PaymentForm({
         return [...prev, week].sort((a, b) => a - b)
       }
     })
-  }
-
-  const handleSelectAllWeeks = () => {
-    if (selectedWeeks.length === availableWeeks.length) {
-      setSelectedWeeks([])
-    } else {
-      setSelectedWeeks([...availableWeeks])
-    }
   }
 
   const validateForm = () => {
@@ -207,26 +198,37 @@ export default function PaymentForm({
       <div className="space-y-2">
         <Label>Minggu Pembayaran</Label>
 
-        <div className="flex justify-between items-center mb-2">
-          <span className="text-sm text-gray-500">Pilih minggu yang akan dibayar</span>
-          <Button type="button" variant="outline" size="sm" onClick={handleSelectAllWeeks}>
-            {selectedWeeks.length === availableWeeks.length ? "Batal Pilih Semua" : "Pilih Semua"}
-          </Button>
-        </div>
+        <div className="bg-gray-50 p-3 rounded-lg">
+          <p className="text-sm mb-2">
+            Minggu yang belum dibayar:{" "}
+            {availableWeeks.length > 0
+              ? `${availableWeeks[0]} - ${availableWeeks[availableWeeks.length - 1]}`
+              : "Tidak ada"}
+          </p>
 
-        <div className="grid grid-cols-6 gap-2">
-          {availableWeeks.map((week) => (
-            <div key={week} className="flex items-center space-x-2">
-              <Checkbox
-                id={`week-${week}`}
-                checked={selectedWeeks.includes(week)}
-                onCheckedChange={() => handleWeekToggle(week)}
-              />
-              <Label htmlFor={`week-${week}`} className="text-sm cursor-pointer">
-                {week}
-              </Label>
-            </div>
-          ))}
+          <div className="flex items-center space-x-2">
+            <Label htmlFor="totalWeeks" className="whitespace-nowrap">
+              Total Minggu:
+            </Label>
+            <Input
+              id="totalWeeks"
+              type="number"
+              min="1"
+              max={availableWeeks.length}
+              value={selectedWeeks.length.toString()}
+              onChange={(e) => {
+                const total = Number.parseInt(e.target.value) || 0
+                if (total <= 0 || availableWeeks.length === 0) {
+                  setSelectedWeeks([])
+                } else {
+                  const count = Math.min(total, availableWeeks.length)
+                  setSelectedWeeks(availableWeeks.slice(0, count))
+                }
+              }}
+              className="w-24"
+            />
+            <span className="text-sm text-gray-500">dari {availableWeeks.length} minggu</span>
+          </div>
         </div>
 
         {errors.weeks && <ErrorMessage message={errors.weeks} />}
@@ -234,8 +236,8 @@ export default function PaymentForm({
         {selectedWeeks.length > 0 && (
           <div className="bg-gray-50 p-3 rounded-lg mt-2">
             <div className="flex justify-between items-center">
-              <span className="text-sm">Total Minggu:</span>
-              <span className="font-medium">{selectedWeeks.length} Minggu</span>
+              <span className="text-sm">Minggu yang akan dibayar:</span>
+              <span className="font-medium">{selectedWeeks.join(", ")}</span>
             </div>
             <div className="flex justify-between items-center mt-1">
               <span className="text-sm">Total Pembayaran:</span>

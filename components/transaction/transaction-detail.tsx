@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import type { Transaction, Payment, PaymentMethod } from "@prisma/client"
@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { LoadingOverlay } from "@/components/loading-spinner"
 import PaymentForm from "@/components/payment/payment-form"
 import PaymentCard from "@/components/payment/payment-card"
+import SharePaymentStatus from "@/components/transaction/share-payment-status"
 
 interface TransactionDetailProps {
   transaction: Transaction & {
@@ -65,6 +66,8 @@ export default function TransactionDetail({
     confirmed: transaction.payments.filter((payment) => payment.status === "confirmed"),
     rejected: transaction.payments.filter((payment) => payment.status === "rejected"),
   }
+
+  const paymentScheduleRef = useRef<HTMLDivElement>(null)
 
   return (
     <>
@@ -214,22 +217,30 @@ export default function TransactionDetail({
 
             {/* Payment Schedule */}
             <div>
-              <h2 className="text-lg font-semibold mb-4">Jadwal Pembayaran</h2>
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-lg font-semibold">Jadwal Pembayaran</h2>
 
-              <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-12 gap-2">
-                {Array.from({ length: transaction.tenor }, (_, i) => i + 1).map((week) => (
-                  <div
-                    key={week}
-                    className={`p-2 rounded-md text-center ${
-                      paidWeeks.has(week)
-                        ? "bg-green-100 text-green-800 border border-green-200"
-                        : "bg-gray-100 text-gray-600 border border-gray-200"
-                    }`}
-                  >
-                    <Calendar className="h-4 w-4 mx-auto mb-1" />
-                    <span className="text-xs">{week}</span>
-                  </div>
-                ))}
+                {!isAdmin && (
+                  <SharePaymentStatus transactionId={transaction.id} paymentStatusRef={paymentScheduleRef} />
+                )}
+              </div>
+
+              <div ref={paymentScheduleRef} className="bg-white p-4 rounded-lg border">
+                <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-12 gap-2">
+                  {Array.from({ length: transaction.tenor }, (_, i) => i + 1).map((week) => (
+                    <div
+                      key={week}
+                      className={`p-2 rounded-md text-center ${
+                        paidWeeks.has(week)
+                          ? "bg-green-100 text-green-800 border border-green-200"
+                          : "bg-gray-100 text-gray-600 border border-gray-200"
+                      }`}
+                    >
+                      <Calendar className="h-4 w-4 mx-auto mb-1" />
+                      <span className="text-xs">{week}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>

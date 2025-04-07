@@ -35,7 +35,7 @@ export default function PackageCard({ package: pkg, isAdmin }: PackageCardProps)
         {isAdmin && (
           <div className="mt-2 text-xs text-gray-500">
             {/* You could add admin-specific info here */}
-            {pkg.isEligibleBonus ? <span className="text-green-600">Eligible Bonus</span> : <span>No Bonus</span>}
+            {pkg.isEligibleBonus ? <span className="text-green-600">Berhak Bonus</span> : <span>No Bonus</span>}
           </div>
         )}
       </div>

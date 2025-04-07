@@ -5,7 +5,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import type { Package, PackageType } from "@prisma/client"
-import { Edit, Trash2, ArrowLeft, Check } from "lucide-react"
+import { Edit, Trash2, ArrowLeft, Check, FileText } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { formatCurrency } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
@@ -16,14 +16,18 @@ import { LoadingOverlay } from "@/components/loading-spinner"
 interface PackageDetailProps {
   packageData: Package & {
     packageType: PackageType
+    _count?: {
+      transactions: number
+    }
   }
   isAdmin: boolean
   userId: string
   userName: string
   userEmail: string
+  transactionCount: number
 }
 
-export default function PackageDetail({ packageData, isAdmin, userId, userName, userEmail }: PackageDetailProps) {
+export default function PackageDetail({ packageData, isAdmin, userId, userName, userEmail, transactionCount }: PackageDetailProps) {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [isTransactionDialogOpen, setIsTransactionDialogOpen] = useState(false)
   const [customerName, setCustomerName] = useState("")
@@ -174,10 +178,17 @@ export default function PackageDetail({ packageData, isAdmin, userId, userName, 
             </div>
           </div>
 
+          {isAdmin && (
+            <div className="bg-blue-50 text-blue-700 px-4 py-2 rounded-md mb-4 text-sm flex items-center">
+              <FileText className="h-4 w-4 mr-2" />
+              Total Transaksi: {transactionCount}
+            </div>
+          )}
+
           {packageData.isEligibleBonus && (
             <div className="bg-green-50 text-green-700 px-4 py-2 rounded-md mb-4 text-sm flex items-center">
               <Check className="h-4 w-4 mr-2" />
-              Eligible untuk bonus
+              Berhak atas bonus
             </div>
           )}
 

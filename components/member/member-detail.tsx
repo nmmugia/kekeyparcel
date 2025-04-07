@@ -4,13 +4,14 @@ import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import type { User, Transaction, Payment } from "@prisma/client"
-import { ArrowLeft, Edit, Trash2, Package } from "lucide-react"
+import { ArrowLeft, Edit, Trash2, Package, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { useToast } from "@/hooks/use-toast"
 import { LoadingOverlay } from "@/components/loading-spinner"
 import { formatCurrency, formatDate } from "@/lib/utils"
+import CreateTransactionForm from "@/components/member/create-transaction-form"
 
 interface MemberDetailProps {
   user: User & {
@@ -29,6 +30,7 @@ export default function MemberDetail({ user }: MemberDetailProps) {
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
   const { toast } = useToast()
+  const [isCreateTransactionDialogOpen, setIsCreateTransactionDialogOpen] = useState(false)
 
   const handleDelete = async () => {
     setIsLoading(true)
@@ -180,7 +182,17 @@ export default function MemberDetail({ user }: MemberDetailProps) {
               </div>
             </div>
 
-            <h3 className="text-lg font-semibold mt-6">Transaksi Terbaru</h3>
+            <div className="flex justify-between items-center mt-6">
+              <h3 className="text-lg font-semibold">Transaksi Terbaru</h3>
+              <Button
+                size="sm"
+                className="bg-pink-500 hover:bg-pink-600"
+                onClick={() => setIsCreateTransactionDialogOpen(true)}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Tambah Paket Baru
+              </Button>
+            </div>
 
             {user.transactions.length > 0 ? (
               <div className="space-y-3">
@@ -275,6 +287,24 @@ export default function MemberDetail({ user }: MemberDetailProps) {
             </Button>
             <Button onClick={handleResetPassword}>Reset Kata Sandi</Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Transaction Dialog */}
+      <Dialog open={isCreateTransactionDialogOpen} onOpenChange={setIsCreateTransactionDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Tambah Paket Baru untuk {user.name}</DialogTitle>
+          </DialogHeader>
+          <CreateTransactionForm
+            resellerId={user.id}
+            resellerName={user.name}
+            resellerEmail={user.email}
+            onSuccess={() => {
+              setIsCreateTransactionDialogOpen(false)
+              router.refresh()
+            }}
+          />
         </DialogContent>
       </Dialog>
     </>

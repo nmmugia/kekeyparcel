@@ -1,6 +1,7 @@
 import Link from "next/link"
-import Image from "next/image"
 import { formatCurrency, formatDate } from "@/lib/utils"
+import { Receipt } from "lucide-react"
+import StatusBadge from "@/components/status-badge"
 
 interface Payment {
   id: string
@@ -50,17 +51,7 @@ export default function TransactionList({ payments, status, userRole }: Transact
                 <p className="text-sm text-gray-600">Pelanggan: {payment.transaction.customerName}</p>
               </div>
 
-              <div
-                className={`px-2 py-1 rounded-full text-xs font-medium ${
-                  status === "process"
-                    ? "bg-yellow-100 text-yellow-800"
-                    : status === "confirmed"
-                      ? "bg-green-100 text-green-800"
-                      : "bg-red-100 text-red-800"
-                }`}
-              >
-                {status === "process" ? "Proses" : status === "confirmed" ? "Dikonfirmasi" : "Ditolak"}
-              </div>
+              <StatusBadge status={status} />
             </div>
 
             <div className="mt-3 flex justify-between items-center">
@@ -76,9 +67,7 @@ export default function TransactionList({ payments, status, userRole }: Transact
 
             {payment.proofImage && (
               <div className="mt-3 flex items-center">
-                <div className="w-6 h-6 relative mr-2">
-                  <Image src="/icons/receipt.svg" alt="Bukti Pembayaran" fill className="object-contain" />
-                </div>
+                <Receipt className="h-4 w-4 mr-2 text-gray-500" />
                 <span className="text-xs text-gray-500">Bukti Pembayaran</span>
               </div>
             )}

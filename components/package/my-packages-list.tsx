@@ -1,6 +1,6 @@
 import Link from "next/link"
-import Image from "next/image"
 import { formatCurrency } from "@/lib/utils"
+import { Package } from "lucide-react"
 
 interface Payment {
   id: string
@@ -61,9 +61,7 @@ export default function MyPackagesList({ transactions }: MyPackagesListProps) {
                 </div>
 
                 <div className="flex items-center">
-                  <div className="w-8 h-8 relative">
-                    <Image src="/icons/package.svg" alt="Package" fill className="object-contain" />
-                  </div>
+                  <Package className="h-6 w-6 text-pink-500" />
                 </div>
               </div>
 

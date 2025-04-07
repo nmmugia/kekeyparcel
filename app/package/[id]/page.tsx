@@ -26,6 +26,13 @@ export default async function PackagePage({ params }: PackagePageProps) {
     },
   })
 
+  const transactionCount = await db.transaction.count({
+    where: {
+      packageName: packageData?.name, // Assuming you have a foreign key in transactions
+      packageDescription: packageData?.description, // Assuming you have a foreign key in transactions
+    },
+  });
+
   if (!packageData) {
     notFound()
   }
@@ -38,6 +45,7 @@ export default async function PackagePage({ params }: PackagePageProps) {
         userId={session.user.id}
         userName={session.user.name}
         userEmail={session.user.email}
+        transactionCount={transactionCount}
       />
     </div>
   )

@@ -1,7 +1,6 @@
 import Link from "next/link"
-import Image from "next/image"
 import type { PackageType, Package } from "@prisma/client"
-import { ChevronRight, Plus } from "lucide-react"
+import { ChevronRight, Plus, FolderPlus } from "lucide-react"
 import PackageCard from "@/components/package/package-card"
 
 interface PackageTypeWithPackages extends PackageType {
@@ -20,16 +19,9 @@ export default function PackageTypeList({ packageTypes, isAdmin }: PackageTypeLi
         <div key={packageType.id} className="space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center">
-              {packageType.icon && (
-                <div className="w-8 h-8 mr-2 relative">
-                  <Image
-                    src={packageType.icon || "/placeholder.svg"}
-                    alt={packageType.name}
-                    fill
-                    className="object-contain"
-                  />
-                </div>
-              )}
+              <div className="w-8 h-8 mr-2 flex items-center justify-center text-pink-500">
+                <FolderPlus className="h-6 w-6" />
+              </div>
               <h2 className="text-xl font-semibold text-gray-800">{packageType.name}</h2>
             </div>
 
@@ -44,9 +36,9 @@ export default function PackageTypeList({ packageTypes, isAdmin }: PackageTypeLi
 
           {packageType.packages.length > 0 ? (
             <div className="overflow-x-auto pb-2">
-              <div className="flex space-x-4">
+              <div className="flex space-x-6">
                 {packageType.packages.map((pkg) => (
-                  <div key={pkg.id} className="w-64 flex-shrink-0">
+                  <div key={pkg.id} className="w-80 flex-shrink-0">
                     <PackageCard package={pkg} isAdmin={isAdmin} />
                   </div>
                 ))}

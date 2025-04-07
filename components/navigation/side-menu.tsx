@@ -3,7 +3,20 @@
 import { useRef, useEffect } from "react"
 import { signOut } from "next-auth/react"
 import Link from "next/link"
-import { X, LogOut, User, Lock, Trash2, FolderPlus, Settings, LayoutDashboard } from "lucide-react"
+import {
+  X,
+  LogOut,
+  User,
+  Lock,
+  Trash2,
+  FolderPlus,
+  Home,
+  FileText,
+  Package,
+  Users,
+  CreditCard,
+  BarChart,
+} from "lucide-react"
 
 interface SideMenuProps {
   isOpen: boolean
@@ -56,8 +69,8 @@ export default function SideMenu({ isOpen, onClose, userRole }: SideMenuProps) {
       {/* Side Menu */}
       <div
         ref={menuRef}
-        className={`fixed top-0 right-0 h-full w-64 bg-white shadow-lg z-30 transform transition-transform duration-300 ease-in-out ${
-          isOpen ? "translate-x-0" : "translate-x-full"
+        className={`fixed top-0 left-0 h-full w-64 bg-white shadow-lg z-30 transform transition-transform duration-300 ease-in-out ${
+          isOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         <div className="flex flex-col h-full">
@@ -71,6 +84,52 @@ export default function SideMenu({ isOpen, onClose, userRole }: SideMenuProps) {
           <div className="flex-1 overflow-y-auto">
             <nav className="p-4">
               <ul className="space-y-2">
+                <li>
+                  <Link href="/home" className="flex items-center p-2 rounded-lg hover:bg-gray-100 text-gray-700">
+                    <Home className="h-5 w-5 mr-3 text-pink-500" />
+                    <span>Daftar Paket</span>
+                  </Link>
+                </li>
+
+                <li>
+                  <Link
+                    href="/transaction"
+                    className="flex items-center p-2 rounded-lg hover:bg-gray-100 text-gray-700"
+                  >
+                    <FileText className="h-5 w-5 mr-3 text-pink-500" />
+                    <span>Transaksi</span>
+                  </Link>
+                </li>
+
+                {userRole === "reseller" ? (
+                  <>
+                    <li>
+                      <Link
+                        href="/my-packages"
+                        className="flex items-center p-2 rounded-lg hover:bg-gray-100 text-gray-700"
+                      >
+                        <Package className="h-5 w-5 mr-3 text-pink-500" />
+                        <span>Paketku</span>
+                      </Link>
+                    </li>
+                    <li>
+                      <Link href="/report" className="flex items-center p-2 rounded-lg hover:bg-gray-100 text-gray-700">
+                        <BarChart className="h-5 w-5 mr-3 text-pink-500" />
+                        <span>Laporan</span>
+                      </Link>
+                    </li>
+                  </>
+                ) : (
+                  <>
+                    <li>
+                      <Link href="/member" className="flex items-center p-2 rounded-lg hover:bg-gray-100 text-gray-700">
+                        <Users className="h-5 w-5 mr-3 text-pink-500" />
+                        <span>Daftar Reseller</span>
+                      </Link>
+                    </li>
+                  </>
+                )}
+
                 <li>
                   <Link href="/profile" className="flex items-center p-2 rounded-lg hover:bg-gray-100 text-gray-700">
                     <User className="h-5 w-5 mr-3 text-pink-500" />
@@ -92,15 +151,6 @@ export default function SideMenu({ isOpen, onClose, userRole }: SideMenuProps) {
                   <>
                     <li>
                       <Link
-                        href="/dashboard"
-                        className="flex items-center p-2 rounded-lg hover:bg-gray-100 text-gray-700"
-                      >
-                        <LayoutDashboard className="h-5 w-5 mr-3 text-pink-500" />
-                        <span>Dashboard</span>
-                      </Link>
-                    </li>
-                    <li>
-                      <Link
                         href="/package-type"
                         className="flex items-center p-2 rounded-lg hover:bg-gray-100 text-gray-700"
                       >
@@ -113,7 +163,7 @@ export default function SideMenu({ isOpen, onClose, userRole }: SideMenuProps) {
                         href="/payment-settings"
                         className="flex items-center p-2 rounded-lg hover:bg-gray-100 text-gray-700"
                       >
-                        <Settings className="h-5 w-5 mr-3 text-pink-500" />
+                        <CreditCard className="h-5 w-5 mr-3 text-pink-500" />
                         <span>Pengaturan Pembayaran</span>
                       </Link>
                     </li>

@@ -4,7 +4,7 @@ import type React from "react"
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, FileText, Package, Users, LayoutDashboard } from "lucide-react"
+import { Home, FileText, Package, Users, BarChart } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface BottomNavigationProps {
@@ -31,28 +31,32 @@ export default function BottomNavigation({ userRole }: BottomNavigationProps) {
         />
 
         {userRole === "reseller" ? (
-          <NavItem
-            href="/my-packages"
-            icon={<Package className="h-6 w-6" />}
-            label="Paketku"
-            isActive={isActive("/my-packages")}
-          />
+          <>
+            <NavItem
+              href="/my-packages"
+              icon={<Package className="h-6 w-6" />}
+              label="Paketku"
+              isActive={isActive("/my-packages")}
+            />
+          </>
         ) : (
           <>
             <NavItem
-              href="/member"
-              icon={<Users className="h-6 w-6" />}
-              label="Reseller"
-              isActive={isActive("/member")}
+              href="/report"
+              icon={<BarChart className="h-6 w-6" />}
+              label="Laporan"
+              isActive={isActive("/report")}
             />
-            <NavItem
-              href="/dashboard"
-              icon={<LayoutDashboard className="h-6 w-6" />}
-              label="Dashboard"
-              isActive={isActive("/dashboard")}
-            />
+          <NavItem
+            href="/member"
+            icon={<Users className="h-6 w-6" />}
+            label="Reseller"
+            isActive={isActive("/member")}
+          />
           </>
         )}
+
+        <NavItem href="/profile" icon={<Users className="h-6 w-6" />} label="Profil" isActive={isActive("/profile")} />
       </div>
     </nav>
   )

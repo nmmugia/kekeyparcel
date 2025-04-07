@@ -1,11 +1,10 @@
 "use client"
 
 import { useState } from "react"
-import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import type { PackageType, Package } from "@prisma/client"
-import { Edit, Trash2, ArrowLeft, Plus } from "lucide-react"
+import { Edit, Trash2, ArrowLeft, Plus, FolderPlus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks/use-toast"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
@@ -66,16 +65,9 @@ export default function PackageTypeDetail({ packageType, isAdmin }: PackageTypeD
             </Link>
 
             <div className="flex items-center">
-              {packageType.icon && (
-                <div className="w-8 h-8 relative mr-2">
-                  <Image
-                    src={packageType.icon || "/placeholder.svg"}
-                    alt={packageType.name}
-                    fill
-                    className="object-contain"
-                  />
-                </div>
-              )}
+              <div className="w-8 h-8 flex items-center justify-center text-pink-500 mr-2">
+                <FolderPlus className="h-6 w-6" />
+              </div>
               <h1 className="text-2xl font-bold text-gray-800">{packageType.name}</h1>
             </div>
           </div>
