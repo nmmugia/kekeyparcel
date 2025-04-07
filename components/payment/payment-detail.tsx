@@ -4,7 +4,7 @@ import { useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import type { Payment, Transaction } from "@prisma/client"
+import type { Payment, Transaction, PaymentMethod } from "@prisma/client"
 import { ArrowLeft, Check, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { formatCurrency, formatDateTime } from "@/lib/utils"
@@ -18,9 +18,10 @@ interface PaymentDetailProps {
     transaction: Transaction
   }
   isAdmin: boolean
+  paymentMethod: PaymentMethod
 }
 
-export default function PaymentDetail({ payment, isAdmin }: PaymentDetailProps) {
+export default function PaymentDetail({ payment, isAdmin, paymentMethod }: PaymentDetailProps) {
   const [isImageModalOpen, setIsImageModalOpen] = useState(false)
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false)
   const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false)
@@ -152,8 +153,8 @@ export default function PaymentDetail({ payment, isAdmin }: PaymentDetailProps) 
                 <div>
                   <p className="text-sm text-gray-500">Metode Pembayaran</p>
                   <p className="font-semibold">
-                    {payment.paymentMethod}
-                    {payment.bankName && ` - ${payment.bankName}`}
+                    {paymentMethod.type}
+                    {paymentMethod.name && ` - ${paymentMethod.name}`}
                   </p>
                 </div>
                 <div>

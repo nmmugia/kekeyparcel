@@ -56,7 +56,7 @@ export default function BottomNavigation({ userRole }: BottomNavigationProps) {
           </>
         )}
 
-        <NavItem href="/profile" icon={<Users className="h-6 w-6" />} label="Profil" isActive={isActive("/profile")} />
+        {/* <NavItem href="/profile" icon={<Users className="h-6 w-6" />} label="Profil" isActive={isActive("/profile")} /> */}
       </div>
     </nav>
   )

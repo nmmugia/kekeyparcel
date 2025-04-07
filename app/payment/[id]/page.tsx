@@ -26,6 +26,12 @@ export default async function PaymentPage({ params }: PaymentPageProps) {
     },
   })
 
+  const paymentMethod = await db.paymentMethod.findUnique({
+    where: {
+      id: payment?.paymentMethod,
+    },
+  })
+
   if (!payment) {
     notFound()
   }
@@ -37,7 +43,7 @@ export default async function PaymentPage({ params }: PaymentPageProps) {
 
   return (
     <div className="container mx-auto px-4 py-6">
-      <PaymentDetail payment={payment} isAdmin={session.user.role === "admin"} />
+      <PaymentDetail payment={payment} isAdmin={session.user.role === "admin"} paymentMethod={paymentMethod}/>
     </div>
   )
 }
