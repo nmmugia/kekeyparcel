@@ -48,7 +48,7 @@ export default function SharePaymentStatus({ transactionId, paymentStatusRef }: 
       if (navigator.share && navigator.canShare({ files: [file] })) {
         await navigator.share({
           title: "Status Pembayaran",
-          text: "Status pembayaran cicilan",
+          text: "Status pembayaran paket",
           files: [file],
         })
         toast({
@@ -60,7 +60,7 @@ export default function SharePaymentStatus({ transactionId, paymentStatusRef }: 
         const shareUrl = URL.createObjectURL(blob)
 
         // Try to share via WhatsApp
-        const whatsappUrl = `https://wa.me/?text=Status%20pembayaran%20cicilan`
+        const whatsappUrl = `https://wa.me/?text=Status%20pembayaran%20paket`
         window.open(whatsappUrl, "_blank")
 
         // Also provide download option

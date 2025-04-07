@@ -164,6 +164,12 @@ export default function TransactionDetail({
                 </div>
               </div>
             </div>
+            {!isAdmin && (
+                <Button className="mt-4 bg-pink-500 hover:bg-pink-600" onClick={() => setIsPaymentDialogOpen(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Tambah Pembayaran
+                </Button>
+              )}
           </div>
         </div>
       </div>
