@@ -1,0 +1,98 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      String   @default("reseller") // "admin" or "reseller"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  transactions Transaction[]
+  payments     Payment[]
+}
+
+model PackageType {
+  id        String    @id @default(cuid())
+  name      String
+  icon      String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  packages  Package[]
+}
+
+model Package {
+  id               String   @id @default(cuid())
+  name             String
+  description      String?
+  pricePerWeek     Float
+  tenor            Int
+  photo            String?
+  isEligibleBonus  Boolean  @default(false)
+  packageTypeId    String
+  packageType      PackageType @relation(fields: [packageTypeId], references: [id])
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model Transaction {
+  id               String   @id @default(cuid())
+  // Package data (denormalized)
+  packageName      String
+  packageDescription String?
+  pricePerWeek     Float
+  tenor            Int
+  isEligibleBonus  Boolean  @default(true)
+  // Customer data
+  customerName     String
+  // Reseller data (denormalized)
+  resellerId       String
+  resellerName     String
+  resellerEmail    String
+  // Relations
+  reseller         User     @relation(fields: [resellerId], references: [id])
+  payments         Payment[]
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model Payment {
+  id             String   @id @default(cuid())
+  transactionId  String
+  transaction    Transaction @relation(fields: [transactionId], references: [id])
+  amount         Float
+  weekNumbers    Int[]    // Array of week numbers this payment covers
+  paymentMethod  String   // "transfer" or "cash"
+  bankName       String?
+  proofImage     String?
+  note           String?
+  status         String   @default("process") // "process", "confirmed", "rejected"
+  // Reseller data (denormalized)
+  resellerId     String
+  resellerName   String
+  resellerEmail  String
+  // Relations
+  reseller       User     @relation(fields: [resellerId], references: [id])
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model PaymentMethod {
+  id            String   @id @default(cuid())
+  name          String
+  accountNumber String?
+  accountHolder String?
+  logo          String?
+  type          String   @default("bank") // "bank" or "cash"
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
