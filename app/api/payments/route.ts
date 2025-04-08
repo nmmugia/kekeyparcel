@@ -27,6 +27,16 @@ export async function POST(request: Request) {
     } = body
 
     // Validate required fields
+    const paymentMethods = await db.paymentMethod.findUnique({
+      where: {
+        id: paymentMethod,
+      },
+    })
+
+    if (!proofImage && paymentMethods?.type === "bank") {
+      return NextResponse.json({ error: "Silakan unggah bukti pembayaran" }, { status: 400 })
+    }
+
     if (!transactionId || !amount || !weekNumbers || !paymentMethod) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
@@ -83,7 +93,7 @@ export async function GET(request: Request) {
     const payments = await db.payment.findMany({
       where,
       include: {
-        transaction: true,
+        transaction: true
       },
       orderBy: {
         createdAt: "desc",

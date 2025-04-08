@@ -20,6 +20,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
       },
     })
 
+
     return NextResponse.json(payment)
   } catch (error) {
     console.error("Error confirming payment:", error)

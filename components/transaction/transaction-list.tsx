@@ -14,6 +14,7 @@ interface Payment {
     packageName: string
     customerName: string
     pricePerWeek: number
+    resellerName: string
   }
   proofImage?: string | null
 }
@@ -48,6 +49,7 @@ export default function TransactionList({ payments, status, userRole }: Transact
             <div className="flex justify-between items-start">
               <div>
                 <h3 className="font-semibold text-gray-800">{payment.transaction.packageName}</h3>
+                <h5 className="text-sm text-gray-500">{payment.transaction.resellerName}</h5>
                 <p className="text-sm text-gray-600">Pelanggan: {payment.transaction.customerName}</p>
               </div>
 

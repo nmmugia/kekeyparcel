@@ -45,6 +45,14 @@ export default async function TransactionPage({ params }: TransactionPageProps) 
     },
   })
 
+  
+  const packages = await db.package.findFirst({
+    where: {
+      name: transaction.packageName,
+      description: transaction.packageDescription,
+    },
+  })
+
   return (
     <div className="container mx-auto px-4 py-6">
       <TransactionDetail
@@ -53,6 +61,7 @@ export default async function TransactionPage({ params }: TransactionPageProps) 
         isAdmin={session.user.role === "admin"}
         userId={session.user.id}
         userName={session.user.name}
+        packages={packages}
         userEmail={session.user.email}
       />
     </div>

@@ -3,7 +3,7 @@
 import { useState, useRef } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import type { Transaction, Payment, PaymentMethod } from "@prisma/client"
+import type { Transaction, Payment, PaymentMethod, Package } from "@prisma/client"
 import { ArrowLeft, Plus, Check, X, Calendar, Clock, FileText } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { formatCurrency, formatDate } from "@/lib/utils"
@@ -13,6 +13,9 @@ import { LoadingOverlay } from "@/components/loading-spinner"
 import PaymentForm from "@/components/payment/payment-form"
 import PaymentCard from "@/components/payment/payment-card"
 import SharePaymentStatus from "@/components/transaction/share-payment-status"
+// Import the new mobile payment form
+import MobilePaymentForm from "@/components/payment/mobile-payment-form"
+import { useIsMobile } from "@/hooks/use-mobile" // Make sure this hook exists
 
 interface TransactionDetailProps {
   transaction: Transaction & {
@@ -23,6 +26,7 @@ interface TransactionDetailProps {
   userId: string
   userName: string
   userEmail: string
+  packages: Package
 }
 
 export default function TransactionDetail({
@@ -32,6 +36,7 @@ export default function TransactionDetail({
   userId,
   userName,
   userEmail,
+  packages,
 }: TransactionDetailProps) {
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -68,6 +73,9 @@ export default function TransactionDetail({
   }
 
   const paymentScheduleRef = useRef<HTMLDivElement>(null)
+
+  // Inside the component, add:
+  const isMobile = useIsMobile()
 
   return (
     <>
@@ -111,7 +119,11 @@ export default function TransactionDetail({
               <p className="text-gray-700">Nama: {transaction.customerName}</p>
               <p className="text-gray-700">Tanggal Daftar: {formatDate(transaction.createdAt)}</p>
             </div>
-
+            { packages.isEligibleBonus && (
+              <div className="mt-2 text-xs text-gray-500">
+                {transaction.isEligibleBonus ? <span className="text-green-600">Berhak Bonus</span> : <span>Tidak dapat Bonus</span>}
+              </div>
+            )}
             {/* Progress */}
             <div>
               <div className="flex justify-between items-center mb-2">
@@ -127,7 +139,7 @@ export default function TransactionDetail({
               <div className="mt-4 grid grid-cols-2 gap-4">
                 <div className="bg-gray-50 p-3 rounded-lg">
                   <p className="text-sm text-gray-500">Total Dibayar</p>
-                  <p className="font-semibold text-green-600">{formatCurrency(totalPaid)}</p>
+                  <p className="font-semibold text-pink-600">{formatCurrency(totalPaid)}</p>
                 </div>
                 <div className="bg-gray-50 p-3 rounded-lg">
                   <p className="text-sm text-gray-500">Sisa Pembayaran</p>
@@ -142,7 +154,7 @@ export default function TransactionDetail({
                 <h2 className="text-lg font-semibold">Jadwal Pembayaran</h2>
 
                 {!isAdmin && (
-                  <SharePaymentStatus transactionId={transaction.id} paymentStatusRef={paymentScheduleRef} />
+                  <SharePaymentStatus customerName={transaction.customerName} transactionId={transaction.id} paymentStatusRef={paymentScheduleRef} />
                 )}
               </div>
 
@@ -153,7 +165,7 @@ export default function TransactionDetail({
                       key={week}
                       className={`p-2 rounded-md text-center ${
                         paidWeeks.has(week)
-                          ? "bg-green-100 text-green-800 border border-green-200"
+                          ? "bg-pink-100 text-gray-800 border border-pink-200"
                           : "bg-gray-100 text-gray-600 border border-gray-200"
                       }`}
                     >
@@ -164,37 +176,52 @@ export default function TransactionDetail({
                 </div>
               </div>
             </div>
-            {!isAdmin && (
-                <Button className="mt-4 bg-pink-500 hover:bg-pink-600" onClick={() => setIsPaymentDialogOpen(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Tambah Pembayaran
-                </Button>
-              )}
+              <Button className="mt-4 bg-pink-500 hover:bg-pink-600" onClick={() => setIsPaymentDialogOpen(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Tambah Pembayaran
+              </Button>
           </div>
         </div>
       </div>
 
-      {/* Payment Dialog */}
-      <Dialog open={isPaymentDialogOpen} onOpenChange={setIsPaymentDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Tambah Pembayaran</DialogTitle>
-          </DialogHeader>
+      {/* Payment Dialog - Desktop or Mobile version based on device */}
+      {isMobile ? (
+        <MobilePaymentForm
+          isOpen={isPaymentDialogOpen}
+          onOpenChange={setIsPaymentDialogOpen}
+          transaction={transaction}
+          paymentMethods={paymentMethods}
+          paidWeeks={paidWeeks}
+          userId={userId}
+          userName={userName}
+          userEmail={userEmail}
+          onSuccess={() => {
+            setIsPaymentDialogOpen(false)
+            router.refresh()
+          }}
+        />
+      ) : (
+        <Dialog open={isPaymentDialogOpen} onOpenChange={setIsPaymentDialogOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Tambah Pembayaran</DialogTitle>
+            </DialogHeader>
 
-          <PaymentForm
-            transaction={transaction}
-            paymentMethods={paymentMethods}
-            paidWeeks={paidWeeks}
-            userId={userId}
-            userName={userName}
-            userEmail={userEmail}
-            onSuccess={() => {
-              setIsPaymentDialogOpen(false)
-              router.refresh()
-            }}
-          />
-        </DialogContent>
-      </Dialog>
+            <PaymentForm
+              transaction={transaction}
+              paymentMethods={paymentMethods}
+              paidWeeks={paidWeeks}
+              userId={userId}
+              userName={userName}
+              userEmail={userEmail}
+              onSuccess={() => {
+                setIsPaymentDialogOpen(false)
+                router.refresh()
+              }}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
     </>
   )
 }
