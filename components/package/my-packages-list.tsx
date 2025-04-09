@@ -1,6 +1,10 @@
+"use client"
+
+import { useState } from "react"
 import Link from "next/link"
 import { formatCurrency } from "@/lib/utils"
-import { Package } from "lucide-react"
+import { Package, Search } from "lucide-react"
+import { Input } from "@/components/ui/input"
 
 interface Payment {
   id: string
@@ -19,9 +23,19 @@ interface Transaction {
 
 interface MyPackagesListProps {
   transactions: Transaction[]
+  customerCount: number
 }
 
-export default function MyPackagesList({ transactions }: MyPackagesListProps) {
+export default function MyPackagesList({ transactions, customerCount }: MyPackagesListProps) {
+  
+  const [searchTerm, setSearchTerm] = useState("")
+
+  // Filter transactions based on search term
+  const filteredTransactions = transactions.filter(
+    (transaction) =>
+      transaction.packageName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      transaction.customerName.toLowerCase().includes(searchTerm.toLowerCase()),
+  )
   if (transactions.length === 0) {
     return (
       <div className="bg-gray-50 rounded-lg p-8 text-center">
@@ -38,7 +52,24 @@ export default function MyPackagesList({ transactions }: MyPackagesListProps) {
 
   return (
     <div className="space-y-4">
-      {transactions.map((transaction) => {
+      <div className="relative mb-6">
+        Jumlah Transaksi: {customerCount}
+      </div>
+      <div className="relative mb-6">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+        <Input
+          placeholder="Cari nama paket atau pelanggan..."
+          className="pl-10"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+      </div>
+      {filteredTransactions.length === 0 ? (
+        <div className="bg-gray-50 rounded-lg p-8 text-center">
+          <p className="text-gray-500">Tidak ada paket yang sesuai dengan pencarian</p>
+        </div>
+      ) : (
+      filteredTransactions.map((transaction) => {
         // Calculate paid weeks
         const paidWeeks = new Set<number>()
         transaction.payments.forEach((payment) => {
@@ -88,7 +119,8 @@ export default function MyPackagesList({ transactions }: MyPackagesListProps) {
             </div>
           </Link>
         )
-      })}
+      })
+    )}
     </div>
   )
 }
