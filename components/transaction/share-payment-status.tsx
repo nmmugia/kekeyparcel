@@ -11,10 +11,9 @@ import html2canvas from "html2canvas"
 interface SharePaymentStatusProps {
   transactionId: string
   paymentStatusRef: React.RefObject<HTMLDivElement>
-  customerName: string
 }
 
-export default function SharePaymentStatus({ transactionId, paymentStatusRef, customerName }: SharePaymentStatusProps) {
+export default function SharePaymentStatus({ transactionId, paymentStatusRef }: SharePaymentStatusProps) {
   const [isSharing, setIsSharing] = useState(false)
   const { toast } = useToast()
 
@@ -23,11 +22,7 @@ export default function SharePaymentStatus({ transactionId, paymentStatusRef, cu
 
     try {
       setIsSharing(true)
-        const prependElement = document.createElement("div");
-        prependElement.innerText = customerName;
-        prependElement.style.fontWeight = "bold";
-        prependElement.style.marginBottom = "10px";
-        paymentStatusRef.current.prepend(prependElement);
+
       // Capture the payment status element as an image
       const canvas = await html2canvas(paymentStatusRef.current, {
         scale: 2, // Higher scale for better quality
@@ -60,8 +55,6 @@ export default function SharePaymentStatus({ transactionId, paymentStatusRef, cu
           title: "Berhasil membagikan",
           description: "Status pembayaran telah dibagikan",
         })
-        window.location.reload()
-
       } else {
         // Fallback for browsers that don't support sharing files
         const shareUrl = URL.createObjectURL(blob)
@@ -80,8 +73,6 @@ export default function SharePaymentStatus({ transactionId, paymentStatusRef, cu
           title: "Gambar telah diunduh",
           description: "Silakan bagikan gambar melalui WhatsApp atau aplikasi lainnya",
         })
-          window.location.reload()
-
       }
     } catch (error) {
       console.error("Error sharing:", error)

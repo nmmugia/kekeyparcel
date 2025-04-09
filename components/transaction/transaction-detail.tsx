@@ -4,11 +4,11 @@ import { useState, useRef } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import type { Transaction, Payment, PaymentMethod, Package } from "@prisma/client"
-import { ArrowLeft, Plus, Check, X, Calendar, Clock, FileText } from "lucide-react"
+import { ArrowLeft, Plus, Check, X, Calendar, Clock, FileText, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { formatCurrency, formatDate } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle,DialogFooter } from "@/components/ui/dialog"
 import { LoadingOverlay } from "@/components/loading-spinner"
 import PaymentForm from "@/components/payment/payment-form"
 import PaymentCard from "@/components/payment/payment-card"
@@ -39,6 +39,7 @@ export default function TransactionDetail({
   packages,
 }: TransactionDetailProps) {
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
   const { toast } = useToast()
@@ -76,6 +77,38 @@ export default function TransactionDetail({
 
   // Inside the component, add:
   const isMobile = useIsMobile()
+  
+  // Handle transaction deletion
+  const handleDeleteTransaction = async () => {
+    setIsLoading(true)
+    try {
+      const response = await fetch(`/api/transactions/${transaction.id}`, {
+        method: "DELETE",
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to delete transaction")
+      }
+
+      toast({
+        title: "Transaksi berhasil dihapus",
+        description: "Transaksi telah dihapus dari sistem",
+      })
+
+      router.push("/transaction")
+      router.refresh()
+    } catch (error) {
+      toast({
+        title: "Gagal menghapus transaksi",
+        description: "Terjadi kesalahan saat menghapus transaksi",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
+      setIsDeleteDialogOpen(false)
+    }
+  }
+
 
   return (
     <>
@@ -83,12 +116,26 @@ export default function TransactionDetail({
 
       <div className="bg-white rounded-lg shadow-sm overflow-hidden">
         <div className="p-6">
-          <div className="flex items-center mb-6">
-            <Link href="/transaction" className="mr-4">
-              <ArrowLeft className="h-5 w-5 text-gray-700" />
-            </Link>
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center">
+              <Link href="/transaction" className="mr-4">
+                <ArrowLeft className="h-5 w-5 text-gray-700" />
+              </Link>
+              <h1 className="text-2xl font-bold text-gray-800">Detail Transaksi</h1>
+            </div>
 
-            <h1 className="text-2xl font-bold text-gray-800">Detail Transaksi</h1>
+            {/* Add delete button for admin */}
+            {isAdmin && (
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => setIsDeleteDialogOpen(true)}
+                className="flex items-center"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Hapus Transaksi
+              </Button>
+            )}
           </div>
 
           <div className="space-y-6">
@@ -112,7 +159,7 @@ export default function TransactionDetail({
                 </div>
               </div>
             </div>
-
+            <div ref={paymentScheduleRef}>
             {/* Customer Info */}
             <div>
               <h2 className="text-lg font-semibold mb-2">Informasi Pelanggan</h2>
@@ -158,7 +205,7 @@ export default function TransactionDetail({
                 )}
               </div>
 
-              <div ref={paymentScheduleRef} className="bg-white p-4 rounded-lg border">
+              <div className="bg-white p-4 rounded-lg border">
                 <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-12 gap-2">
                   {Array.from({ length: transaction.tenor }, (_, i) => i + 1).map((week) => (
                     <div
@@ -175,6 +222,7 @@ export default function TransactionDetail({
                   ))}
                 </div>
               </div>
+            </div>
             </div>
               <Button className="mt-4 bg-pink-500 hover:bg-pink-600" onClick={() => setIsPaymentDialogOpen(true)}>
                 <Plus className="h-4 w-4 mr-2" />
@@ -222,6 +270,28 @@ export default function TransactionDetail({
           </DialogContent>
         </Dialog>
       )}
+      
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Hapus Transaksi</DialogTitle>
+          </DialogHeader>
+          <p>
+            Apakah Anda yakin ingin menghapus transaksi ini? Semua data pembayaran terkait juga akan dihapus. Tindakan
+            ini tidak dapat dibatalkan.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+              Batal
+            </Button>
+            <Button variant="destructive" onClick={handleDeleteTransaction}>
+              Hapus
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   )
 }
