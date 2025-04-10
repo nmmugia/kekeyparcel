@@ -95,7 +95,7 @@ export default function TransactionDetail({
         description: "Transaksi telah dihapus dari sistem",
       })
 
-      router.push("/transaction")
+      router.push(`/member/${transaction.resellerId}/transactions`)
       router.refresh()
     } catch (error) {
       toast({

@@ -2,8 +2,10 @@
 
 import Link from "next/link"
 import type { Transaction, Payment } from "@prisma/client"
-import { ArrowLeft, Package } from "lucide-react"
+import { ArrowLeft, Package, Search } from "lucide-react"
 import { formatCurrency, formatDate } from "@/lib/utils"
+import { Input } from "@/components/ui/input"
+import { useState } from "react"
 
 interface MemberTransactionsProps {
   user: {
@@ -18,11 +20,19 @@ interface MemberTransactionsProps {
 
 export default function MemberTransactions({ user, transactions }: MemberTransactionsProps) {
   // Calculate total amount from confirmed payments
+  const [searchTerm, setSearchTerm] = useState("")
   const calculateTotalAmount = (transactions: (Transaction & { payments: Payment[] })[]) => {
     return transactions.reduce((total, transaction) => {
       return total + transaction.payments.reduce((sum, payment) => sum + payment.amount, 0)
     }, 0)
   }
+
+  const filteredTransactions = transactions.filter(
+    (transaction) =>
+      transaction.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      transaction.packageName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      transaction.resellerName.toLowerCase().includes(searchTerm.toLowerCase())
+  )
 
   const totalAmount = calculateTotalAmount(transactions)
 
@@ -51,10 +61,18 @@ export default function MemberTransactions({ user, transactions }: MemberTransac
         </div>
 
         <h3 className="text-lg font-semibold mb-4">Daftar Transaksi</h3>
-
-        {transactions.length > 0 ? (
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+          <Input
+            placeholder="Cari reseller..."
+            className="pl-10"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+        {filteredTransactions.length > 0 ? (
           <div className="space-y-4">
-            {transactions.map((transaction) => {
+            {filteredTransactions.map((transaction) => {
               // Calculate paid weeks
               const paidWeeks = new Set<number>()
               transaction.payments.forEach((payment) => {
