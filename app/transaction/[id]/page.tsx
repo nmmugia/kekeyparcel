@@ -16,10 +16,10 @@ export default async function TransactionPage({ params }: TransactionPageProps) 
   if (!session) {
     redirect("/login")
   }
-
+  const { id } = await params
   const transaction = await db.transaction.findUnique({
     where: {
-      id: params.id,
+      id: id,
     },
     include: {
       payments: {
@@ -45,13 +45,7 @@ export default async function TransactionPage({ params }: TransactionPageProps) 
     },
   })
 
-  
-  const packages = await db.package.findFirst({
-    where: {
-      name: transaction.packageName,
-      description: transaction.packageDescription,
-    },
-  })
+
 
   return (
     <div className="container mx-auto px-4 py-6">
@@ -61,7 +55,6 @@ export default async function TransactionPage({ params }: TransactionPageProps) 
         isAdmin={session.user.role === "admin"}
         userId={session.user.id}
         userName={session.user.name}
-        packages={packages}
         userEmail={session.user.email}
       />
     </div>

@@ -26,7 +26,6 @@ interface TransactionDetailProps {
   userId: string
   userName: string
   userEmail: string
-  packages: Package
 }
 
 export default function TransactionDetail({
@@ -36,7 +35,6 @@ export default function TransactionDetail({
   userId,
   userName,
   userEmail,
-  packages,
 }: TransactionDetailProps) {
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
@@ -166,11 +164,9 @@ export default function TransactionDetail({
               <p className="text-gray-700">Nama: {transaction.customerName}</p>
               <p className="text-gray-700">Tanggal Daftar: {formatDate(transaction.createdAt)}</p>
             </div>
-            { packages.isEligibleBonus && (
-              <div className="mt-2 text-xs text-gray-500">
-                {transaction.isEligibleBonus ? <span className="text-green-600">Berhak Bonus</span> : <span>Tidak dapat Bonus</span>}
-              </div>
-            )}
+            <div className="mt-2 text-xs text-gray-500">
+              {transaction.isEligibleBonus ? <span className="text-green-600">Berhak Bonus</span> : <span>Tidak dapat Bonus</span>}
+            </div>
             {/* Progress */}
             <div>
               <div className="flex justify-between items-center mb-2">

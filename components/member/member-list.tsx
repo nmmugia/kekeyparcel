@@ -64,7 +64,6 @@ export default function MemberList({ resellers }: MemberListProps) {
               className="block bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow overflow-hidden border border-gray-100 p-4"
             >
               <h3 className="font-semibold text-gray-800">{reseller.name}</h3>
-              <p className="text-sm text-gray-600 mt-1">{reseller.email}</p>
 
               <div className="mt-3 flex justify-between items-center">
                 <div className="text-sm text-gray-500">Total Transaksi:</div>
