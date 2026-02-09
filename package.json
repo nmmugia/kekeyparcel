@@ -65,7 +65,7 @@
     "path": "latest",
     "pg": "^8.16.3",
     "pm2": "^6.0.14",
-    "prisma": "^7.1.0",
+    "@prisma/client": "^7.1.0",
     "react": "^19",
     "react-day-picker": "8.10.1",
     "react-dom": "^19",
@@ -86,6 +86,7 @@
     "@types/uuid": "^10.0.0",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.19",
-    "typescript": "^5"
+    "typescript": "^5",
+    "prisma": "^7.1.0"
   }
 }
