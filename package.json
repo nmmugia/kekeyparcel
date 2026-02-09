@@ -65,7 +65,6 @@
     "path": "latest",
     "pg": "^8.16.3",
     "pm2": "^6.0.14",
-    "@prisma/client": "^7.1.0",
     "react": "^19",
     "react-day-picker": "8.10.1",
     "react-dom": "^19",
