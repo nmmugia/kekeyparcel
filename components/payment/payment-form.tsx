@@ -148,7 +148,7 @@ export default function PaymentForm({
         amount: Number.parseFloat(amount),
         weekNumbers: selectedWeeks,
         paymentMethod,
-        bankName: paymentMethod === "transfer" ? bankName : null,
+        bankName: paymentMethod === "bank" ? bankName : null,
         proofImage: proofImageUrl,
         note,
         resellerId: userId,
@@ -165,7 +165,13 @@ export default function PaymentForm({
       })
 
       if (!response.ok) {
-        throw new Error("Failed to create payment")
+        const data = await response.json();
+        toast({
+            title: "Gagal membuat pembayaran",
+            description: data.error,
+            variant: "destructive",
+        })
+        return
       }
 
       toast({
@@ -195,127 +201,134 @@ export default function PaymentForm({
         </div>
       )}
 
-      <div className="space-y-2">
-        <Label>Minggu Pembayaran</Label>
+      <div className="space-y-4 mb-16">
+        {" "}
+        {/* Add bottom margin to ensure space for fixed buttons */}
+        <div className="space-y-2">
+          <Label>Minggu Pembayaran</Label>
 
-        <div className="bg-gray-50 p-3 rounded-lg">
-          <p className="text-sm mb-2">
-            Minggu yang belum dibayar:{" "}
-            {availableWeeks.length > 0
-              ? `${availableWeeks[0]} - ${availableWeeks[availableWeeks.length - 1]}`
-              : "Tidak ada"}
-          </p>
+          <div className="bg-gray-50 p-3 rounded-lg">
+            <p className="text-sm mb-2">
+              Minggu yang belum dibayar:{" "}
+              {availableWeeks.length > 0
+                ? `${availableWeeks[0]} - ${availableWeeks[availableWeeks.length - 1]}`
+                : "Tidak ada"}
+            </p>
 
-          <div className="flex items-center space-x-2">
-            <Label htmlFor="totalWeeks" className="whitespace-nowrap">
-              Total Minggu:
-            </Label>
-            <Input
-              id="totalWeeks"
-              type="number"
-              min="1"
-              max={availableWeeks.length}
-              value={selectedWeeks.length.toString()}
-              onChange={(e) => {
-                const total = Number.parseInt(e.target.value) || 0
-                if (total <= 0 || availableWeeks.length === 0) {
-                  setSelectedWeeks([])
-                } else {
-                  const count = Math.min(total, availableWeeks.length)
-                  setSelectedWeeks(availableWeeks.slice(0, count))
-                }
-              }}
-              className="w-24"
-            />
-            <span className="text-sm text-gray-500">dari {availableWeeks.length} minggu</span>
+            <div className="flex items-center space-x-2">
+              <Label htmlFor="totalWeeks" className="whitespace-nowrap">
+                Total Minggu:
+              </Label>
+              <Input
+                id="totalWeeks"
+                type="number"
+                min="1"
+                max={availableWeeks.length}
+                value={selectedWeeks.length.toString()}
+                onChange={(e) => {
+                  const total = Number.parseInt(e.target.value) || 0
+                  if (total <= 0 || availableWeeks.length === 0) {
+                    setSelectedWeeks([])
+                  } else {
+                    const count = Math.min(total, availableWeeks.length)
+                    setSelectedWeeks(availableWeeks.slice(0, count))
+                  }
+                }}
+                className="w-24"
+              />
+              <span className="text-sm text-gray-500">dari {availableWeeks.length} minggu</span>
+            </div>
           </div>
+
+          {errors.weeks && <ErrorMessage message={errors.weeks} />}
+
+          {selectedWeeks.length > 0 && (
+            <div className="bg-gray-50 p-3 rounded-lg mt-2">
+              <div className="flex justify-between items-center">
+                <span className="text-sm">Minggu yang akan dibayar:</span>
+                <span className="font-medium">{selectedWeeks.join(", ")}</span>
+              </div>
+              <div className="flex justify-between items-center mt-1">
+                <span className="text-sm">Total Pembayaran:</span>
+                <span className="font-medium text-pink-600">{formatCurrency(Number.parseFloat(amount))}</span>
+              </div>
+            </div>
+          )}
         </div>
-
-        {errors.weeks && <ErrorMessage message={errors.weeks} />}
-
-        {selectedWeeks.length > 0 && (
-          <div className="bg-gray-50 p-3 rounded-lg mt-2">
-            <div className="flex justify-between items-center">
-              <span className="text-sm">Minggu yang akan dibayar:</span>
-              <span className="font-medium">{selectedWeeks.join(", ")}</span>
-            </div>
-            <div className="flex justify-between items-center mt-1">
-              <span className="text-sm">Total Pembayaran:</span>
-              <span className="font-medium text-pink-600">{formatCurrency(Number.parseFloat(amount))}</span>
-            </div>
+        <div className="space-y-2">
+          <Label htmlFor="paymentMethod">Metode Pembayaran</Label>
+          <Select
+            value={paymentMethod}
+            onValueChange={(value) => {
+              setPaymentMethod(value)
+              // Reset bank name if not transfer
+              if (value !== "transfer") {
+                setBankName("")
+              } else {
+                // Set default bank name from selected payment method
+                const method = paymentMethods.find((pm) => pm.id === value)
+                if (method) {
+                  setBankName(method.name)
+                }
+              }
+            }}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Pilih metode pembayaran" />
+            </SelectTrigger>
+            <SelectContent>
+              {paymentMethods.map((method) => (
+                <SelectItem key={method.id} value={method.id}>
+                  {method.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {errors.paymentMethod && <ErrorMessage message={errors.paymentMethod} />}
+        </div>
+        {selectedPaymentMethod && selectedPaymentMethod.type === "bank" && (
+          <div className="bg-gray-50 p-3 rounded-lg">
+            <p className="text-sm font-medium">{selectedPaymentMethod.name}</p>
+            {selectedPaymentMethod.accountNumber && (
+              <p className="text-sm mt-1">No. Rekening: {selectedPaymentMethod.accountNumber}</p>
+            )}
+            {selectedPaymentMethod.accountHolder && (
+              <p className="text-sm">Atas Nama: {selectedPaymentMethod.accountHolder}</p>
+            )}
           </div>
         )}
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="paymentMethod">Metode Pembayaran</Label>
-        <Select
-          value={paymentMethod}
-          onValueChange={(value) => {
-            setPaymentMethod(value)
-            // Reset bank name if not transfer
-            if (value !== "transfer") {
-              setBankName("")
-            } else {
-              // Set default bank name from selected payment method
-              const method = paymentMethods.find((pm) => pm.id === value)
-              if (method) {
-                setBankName(method.name)
-              }
-            }
-          }}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Pilih metode pembayaran" />
-          </SelectTrigger>
-          <SelectContent>
-            {paymentMethods.map((method) => (
-              <SelectItem key={method.id} value={method.id}>
-                {method.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {errors.paymentMethod && <ErrorMessage message={errors.paymentMethod} />}
-      </div>
-
-      {selectedPaymentMethod && selectedPaymentMethod.type === "bank" && (
-        <div className="bg-gray-50 p-3 rounded-lg">
-          <p className="text-sm font-medium">{selectedPaymentMethod.name}</p>
-          {selectedPaymentMethod.accountNumber && (
-            <p className="text-sm mt-1">No. Rekening: {selectedPaymentMethod.accountNumber}</p>
-          )}
-          {selectedPaymentMethod.accountHolder && (
-            <p className="text-sm">Atas Nama: {selectedPaymentMethod.accountHolder}</p>
-          )}
-        </div>
-      )}
-
-      {paymentMethod && paymentMethods.find((pm) => pm.id === paymentMethod)?.type === "bank" && (
+        {paymentMethod && paymentMethods.find((pm) => pm.id === paymentMethod)?.type === "bank" && (
+          <div className="space-y-2">
+            <Label htmlFor="proofImage">Bukti Pembayaran</Label>
+            <Input
+              id="proofImage"
+              type="file"
+              accept="image/*"
+              onChange={handleProofImageChange}
+              disabled={isLoading}
+            />
+            {proofImagePreview && (
+              <div className="mt-2">
+                <img src={proofImagePreview || "/placeholder.svg"} alt="Preview" className="max-h-40 rounded-md" />
+              </div>
+            )}
+            {errors.proofImage && <ErrorMessage message={errors.proofImage} />}
+          </div>
+        )}
         <div className="space-y-2">
-          <Label htmlFor="proofImage">Bukti Pembayaran</Label>
-          <Input id="proofImage" type="file" accept="image/*" onChange={handleProofImageChange} disabled={isLoading} />
-          {proofImagePreview && (
-            <div className="mt-2">
-              <img src={proofImagePreview || "/placeholder.svg"} alt="Preview" className="max-h-40 rounded-md" />
-            </div>
-          )}
-          {errors.proofImage && <ErrorMessage message={errors.proofImage} />}
+          <Label htmlFor="note">Catatan (Opsional)</Label>
+          <Textarea
+            id="note"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder="Tambahkan catatan jika diperlukan"
+            disabled={isLoading}
+          />
         </div>
-      )}
-
-      <div className="space-y-2">
-        <Label htmlFor="note">Catatan (Opsional)</Label>
-        <Textarea
-          id="note"
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-          placeholder="Tambahkan catatan jika diperlukan"
-          disabled={isLoading}
-        />
       </div>
 
-      <div className="flex justify-end space-x-2 pt-2">
+      {/* Fixed button container at the bottom */}
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t flex justify-end space-x-2 z-50">
         <Button type="button" variant="outline" onClick={onSuccess} disabled={isLoading}>
           Batal
         </Button>

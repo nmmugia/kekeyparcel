@@ -122,12 +122,10 @@ export default function MemberDetail({ user }: MemberDetailProps) {
             <Link href={`/member/edit/${user.id}`}>
               <Button size="sm" variant="outline">
                 <Edit className="h-4 w-4 mr-2" />
-                Edit
               </Button>
             </Link>
             <Button size="sm" variant="destructive" onClick={() => setIsDeleteDialogOpen(true)}>
               <Trash2 className="h-4 w-4 mr-2" />
-              Hapus
             </Button>
           </div>
         </div>

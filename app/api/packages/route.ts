@@ -39,3 +39,25 @@ export async function POST(request: Request) {
   }
 }
 
+
+export async function GET(request: Request) {
+  const session = await getServerSession(authOptions)
+
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
+  try {
+
+    const payments = await db.package.findMany({
+      orderBy: {
+        createdAt: "desc",
+      },
+    })
+
+    return NextResponse.json(payments)
+  } catch (error) {
+    console.error("Error fetching payments:", error)
+    return NextResponse.json({ error: "Failed to fetch payments" }, { status: 500 })
+  }
+}

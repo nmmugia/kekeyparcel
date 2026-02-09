@@ -16,10 +16,10 @@ export default async function TransactionPage({ params }: TransactionPageProps) 
   if (!session) {
     redirect("/login")
   }
-
+  const { id } = await params
   const transaction = await db.transaction.findUnique({
     where: {
-      id: params.id,
+      id: id,
     },
     include: {
       payments: {
@@ -44,6 +44,8 @@ export default async function TransactionPage({ params }: TransactionPageProps) 
       name: "asc",
     },
   })
+
+
 
   return (
     <div className="container mx-auto px-4 py-6">

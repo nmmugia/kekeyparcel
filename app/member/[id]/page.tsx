@@ -20,10 +20,10 @@ export default async function MemberPage({ params }: MemberPageProps) {
   if (session.user.role !== "admin") {
     redirect("/home")
   }
-
+  const { id } = await params
   const user = await db.user.findUnique({
     where: {
-      id: params.id,
+      id: id,
       role: "reseller",
     },
     include: {

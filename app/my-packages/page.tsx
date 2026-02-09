@@ -27,10 +27,15 @@ export default async function MyPackagesPage() {
       createdAt: "desc",
     },
   })
+  const customerCount = await db.transaction.count({
+    where: {
+      resellerId: session.user.id,
+    },
+  })
 
   return (
     <div className="container mx-auto px-4 py-6">
-      <MyPackagesList transactions={transactions} />
+      <MyPackagesList transactions={transactions} customerCount={customerCount} />
     </div>
   )
 }

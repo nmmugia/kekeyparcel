@@ -198,7 +198,6 @@ export default function PackageForm({ packageTypes, packageData, defaultTypeId }
               placeholder="Masukkan harga per minggu"
               type="number"
               min="0"
-              step="1000"
             />
             {errors.pricePerWeek && <ErrorMessage message={errors.pricePerWeek} />}
           </div>
