@@ -53,7 +53,7 @@ export async function uploadFile(file: Buffer, fileName: string, contentType: st
         await s3Client.send(command)
 
         // Return the public URL
-        return `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`
+        return `https://luugchcflfbqxnlfagee.storage.supabase.co/storage/v1/s3/${key}`
     } catch (error) {
         console.error("Error uploading to S3:", error)
         // Fall back to local storage if S3 upload fails
