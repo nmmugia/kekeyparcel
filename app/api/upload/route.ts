@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
-import { uploadFile } from "@/lib/s3-upload"
+import { uploadFile } from "@/lib/supabase-upload"
 
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions)
