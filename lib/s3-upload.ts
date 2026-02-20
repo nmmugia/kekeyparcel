@@ -17,6 +17,7 @@ const s3Client = isAwsConfigured
             accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
             secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
         },
+        forcePathStyle: true, // Required for Supabase S3 compatibility
     })
     : null
 
@@ -53,11 +54,11 @@ export async function uploadFile(
 
         await s3Client.send(command)
 
-        // ✅ Dynamic public URL
-        const baseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+        // ✅ Dynamic public URL using Supabase Storage public URL format
+        const baseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL_P
         const bucket = process.env.AWS_BUCKET_NAME
 
-        return `${baseUrl}/${bucket}/${key}`
+        return `${baseUrl}/storage/v1/object/public/${bucket}/${key}`
     } catch (error) {
         console.error("Error uploading to S3:", error)
         throw error
