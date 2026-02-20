@@ -12,6 +12,7 @@ const isAwsConfigured =
 const s3Client = isAwsConfigured
     ? new S3Client({
         region: process.env.AWS_REGION,
+        endpoint: process.env.NEXT_PUBLIC_SUPABASE_URL,
         credentials: {
             accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
             secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
@@ -26,38 +27,40 @@ const s3Client = isAwsConfigured
  * @param contentType MIME type of the file
  * @returns URL of the uploaded file
  */
-export async function uploadFile(file: Buffer, fileName: string, contentType: string): Promise<string> {
-    // If AWS is not configured, fall back to local storage
+export async function uploadFile(
+    file: Buffer,
+    fileName: string,
+    contentType: string
+): Promise<string> {
     if (!isAwsConfigured || !s3Client) {
-        // return uploadToLocalStorage(file, fileName)
+        throw new Error("S3 not configured")
     }
 
     try {
-        // Generate a unique file name with original extension
         const fileExtension = fileName.split(".").pop() || ""
         const uniqueFileName = `${uuidv4()}.${fileExtension}`
 
-        // Define the folder structure in S3
         const folderPath = determineFolder(contentType)
         const key = `${folderPath}/${uniqueFileName}`
 
-        // Upload to S3
         const command = new PutObjectCommand({
             Bucket: process.env.AWS_BUCKET_NAME!,
             Key: key,
             Body: file,
             ContentType: contentType,
-            ACL: "public-read", // Make the file publicly accessible
+            ACL: "public-read",
         })
 
         await s3Client.send(command)
 
-        // Return the public URL
-        return `https://luugchcflfbqxnlfagee.storage.supabase.co/storage/v1/s3/${key}`
+        // ✅ Dynamic public URL
+        const baseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+        const bucket = process.env.AWS_BUCKET_NAME
+
+        return `${baseUrl}/${bucket}/${key}`
     } catch (error) {
         console.error("Error uploading to S3:", error)
-        // Fall back to local storage if S3 upload fails
-        // return uploadToLocalStorage(file, fileName)
+        throw error
     }
 }
 
