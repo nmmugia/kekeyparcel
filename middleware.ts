@@ -30,7 +30,7 @@ export async function middleware(req: NextRequest) {
     const userRole = token.role as string
 
     // Admin-only routes
-    const adminRoutes = ["/admin", "/member"]
+    const adminRoutes = ["/admin", "/member", "/deletion-requests"]
     const isAdminRoute = adminRoutes.some((route) => req.nextUrl.pathname.startsWith(route))
 
     if (isAdminRoute && userRole !== "admin") {

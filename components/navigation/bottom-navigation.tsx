@@ -38,6 +38,12 @@ export default function BottomNavigation({ userRole }: BottomNavigationProps) {
               label="Paketku"
               isActive={isActive("/my-packages")}
             />
+            <NavItem
+              href="/reseller-report"
+              icon={<BarChart className="h-6 w-6" />}
+              label="Laporan"
+              isActive={isActive("/reseller-report")}
+            />
           </>
         ) : (
           <>

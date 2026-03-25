@@ -3,7 +3,7 @@
 import { useRef, useEffect } from "react"
 import { signOut } from "next-auth/react"
 import Link from "next/link"
-import { X, LogOut, User, Lock, Trash2, FolderPlus, Home, FileText, Package, Users, CreditCard } from "lucide-react"
+import { X, LogOut, User, Lock, Trash2, FolderPlus, Home, FileText, Package, Users, CreditCard, BarChart, ClipboardList } from "lucide-react"
 
 interface SideMenuProps {
   isOpen: boolean
@@ -89,15 +89,26 @@ export default function SideMenu({ isOpen, onClose, userRole }: SideMenuProps) {
                 </li>
 
                 {userRole === "reseller" ? (
-                  <li>
-                    <Link
-                      href="/my-packages"
-                      className="flex items-center p-2 rounded-lg hover:bg-gray-100 text-gray-700"
-                    >
-                      <Package className="h-5 w-5 mr-3 text-pink-500" />
-                      <span>Paketku</span>
-                    </Link>
-                  </li>
+                  <>
+                    <li>
+                      <Link
+                        href="/my-packages"
+                        className="flex items-center p-2 rounded-lg hover:bg-gray-100 text-gray-700"
+                      >
+                        <Package className="h-5 w-5 mr-3 text-pink-500" />
+                        <span>Paketku</span>
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        href="/reseller-report"
+                        className="flex items-center p-2 rounded-lg hover:bg-gray-100 text-gray-700"
+                      >
+                        <BarChart className="h-5 w-5 mr-3 text-pink-500" />
+                        <span>Laporan</span>
+                      </Link>
+                    </li>
+                  </>
                 ) : (
                   <>
                     <li>
@@ -153,6 +164,15 @@ export default function SideMenu({ isOpen, onClose, userRole }: SideMenuProps) {
                       >
                         <Trash2 className="h-5 w-5 mr-3 text-pink-500" />
                         <span>Hapus Bukti Pembayaran</span>
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        href="/deletion-requests"
+                        className="flex items-center p-2 rounded-lg hover:bg-gray-100 text-gray-700"
+                      >
+                        <ClipboardList className="h-5 w-5 mr-3 text-pink-500" />
+                        <span>Permintaan Hapus</span>
                       </Link>
                     </li>
                   </>
