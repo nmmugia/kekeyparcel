@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { formatCurrency, formatDate } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
 import { LoadingOverlay } from "@/components/loading-spinner"
+import TransactionReceipt from "@/components/transaction/transaction-receipt"
 import html2canvas from "html2canvas"
 import {
   AlertCircle,
@@ -83,7 +84,8 @@ export default function ResellerReport({ userId, userName }: ResellerReportProps
   const [isMultiSelectMode, setIsMultiSelectMode] = useState(false)
   const [isSharing, setIsSharing] = useState(false)
   const [showAllDates, setShowAllDates] = useState(false)
-  const transactionRefs = useRef<Record<string, HTMLDivElement | null>>({})
+  // Refs for hidden receipt components (used for screenshot capture)
+  const receiptRefs = useRef<Record<string, HTMLDivElement | null>>({})
   const { toast } = useToast()
 
   const fetchTransactions = useCallback(async () => {
@@ -187,40 +189,45 @@ export default function ResellerReport({ userId, userName }: ResellerReportProps
     }
   }
 
-  // Handle share to WhatsApp
-  const handleShareSingle = async (transactionId: string) => {
-    const el = transactionRefs.current[transactionId]
-    if (!el) return
+  // Capture a receipt screenshot for a single transaction
+  const captureReceipt = async (transactionId: string): Promise<File | null> => {
+    const el = receiptRefs.current[transactionId]
+    if (!el) return null
 
+    const canvas = await html2canvas(el, {
+      scale: 2,
+      backgroundColor: "#FFFFFF",
+      logging: false,
+      useCORS: true,
+    })
+
+    const blob = await new Promise<Blob>((resolve) => {
+      canvas.toBlob((blob) => resolve(blob!), "image/png", 0.95)
+    })
+
+    return new File([blob], `status-pembayaran-${transactionId}.png`, { type: "image/png" })
+  }
+
+  // Share single transaction screenshot via WhatsApp
+  const handleShareSingle = async (transactionId: string) => {
     setIsSharing(true)
     try {
-      const canvas = await html2canvas(el, {
-        scale: 2,
-        backgroundColor: "#FFFFFF",
-        logging: false,
-        useCORS: true,
-      })
-
-      const blob = await new Promise<Blob>((resolve) => {
-        canvas.toBlob((blob) => resolve(blob!), "image/png", 0.95)
-      })
-
-      const file = new File([blob], `transaksi-${transactionId}.png`, { type: "image/png" })
+      const file = await captureReceipt(transactionId)
+      if (!file) throw new Error("Could not capture receipt")
 
       if (navigator.share && navigator.canShare({ files: [file] })) {
         await navigator.share({
-          title: "Detail Transaksi",
-          text: "Detail transaksi paket",
+          title: "Status Pembayaran",
+          text: "Status pembayaran paket",
           files: [file],
         })
       } else {
-        // Fallback: download then open WhatsApp
         const link = document.createElement("a")
-        link.href = URL.createObjectURL(blob)
-        link.download = `transaksi-${transactionId}.png`
+        link.href = URL.createObjectURL(file)
+        link.download = file.name
         link.click()
 
-        window.open("https://wa.me/?text=Detail%20transaksi%20paket", "_blank")
+        window.open("https://wa.me/?text=Status%20pembayaran%20paket", "_blank")
       }
 
       toast({
@@ -239,7 +246,7 @@ export default function ResellerReport({ userId, userName }: ResellerReportProps
     }
   }
 
-  // Handle multi-select share
+  // Handle multi-select toggle
   const toggleSelection = (id: string) => {
     setSelectedForShare((prev) => {
       const updated = new Set(prev)
@@ -252,6 +259,7 @@ export default function ResellerReport({ userId, userName }: ResellerReportProps
     })
   }
 
+  // Share multiple transaction screenshots via WhatsApp
   const handleShareMultiple = async () => {
     if (selectedForShare.size === 0) return
 
@@ -260,27 +268,16 @@ export default function ResellerReport({ userId, userName }: ResellerReportProps
       const files: File[] = []
 
       for (const transactionId of selectedForShare) {
-        const el = transactionRefs.current[transactionId]
-        if (!el) continue
-
-        const canvas = await html2canvas(el, {
-          scale: 2,
-          backgroundColor: "#FFFFFF",
-          logging: false,
-          useCORS: true,
-        })
-
-        const blob = await new Promise<Blob>((resolve) => {
-          canvas.toBlob((blob) => resolve(blob!), "image/png", 0.95)
-        })
-
-        files.push(new File([blob], `transaksi-${transactionId}.png`, { type: "image/png" }))
+        const file = await captureReceipt(transactionId)
+        if (file) files.push(file)
       }
+
+      if (files.length === 0) throw new Error("No receipts captured")
 
       if (navigator.share && navigator.canShare({ files })) {
         await navigator.share({
-          title: "Detail Transaksi",
-          text: `${files.length} transaksi`,
+          title: "Status Pembayaran",
+          text: `${files.length} status pembayaran`,
           files,
         })
       } else {
@@ -290,11 +287,10 @@ export default function ResellerReport({ userId, userName }: ResellerReportProps
           link.href = URL.createObjectURL(file)
           link.download = file.name
           link.click()
-          // Small delay between downloads
           await new Promise((r) => setTimeout(r, 300))
         }
 
-        window.open("https://wa.me/?text=Detail%20transaksi%20paket", "_blank")
+        window.open("https://wa.me/?text=Status%20pembayaran%20paket", "_blank")
       }
 
       toast({
@@ -328,6 +324,26 @@ export default function ResellerReport({ userId, userName }: ResellerReportProps
   return (
     <div className="space-y-6">
       {(isSharing || isDeleting) && <LoadingOverlay />}
+
+      {/* Hidden receipt containers for screenshot capture — mirrors transaction detail page layout */}
+      <div
+        style={{
+          position: "absolute",
+          left: "-9999px",
+          top: 0,
+          zIndex: -1,
+          overflow: "hidden",
+        }}
+        aria-hidden="true"
+      >
+        {transactions.map((transaction) => (
+          <TransactionReceipt
+            key={transaction.id}
+            ref={(el) => { receiptRefs.current[transaction.id] = el }}
+            transaction={transaction}
+          />
+        ))}
+      </div>
 
       {/* Date Filter */}
       <Card>
@@ -499,9 +515,8 @@ export default function ResellerReport({ userId, userName }: ResellerReportProps
                       </button>
                     )}
 
-                    {/* Transaction card (capturable) */}
+                    {/* Transaction card */}
                     <div
-                      ref={(el) => { transactionRefs.current[transaction.id] = el }}
                       className={`bg-white border rounded-lg p-4 transition-all ${
                         isMultiSelectMode ? "ml-6" : ""
                       } ${
@@ -598,7 +613,7 @@ export default function ResellerReport({ userId, userName }: ResellerReportProps
                       {/* Action buttons */}
                       <div className="mt-3 pt-3 border-t flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          {/* Share single */}
+                          {/* Share single — captures the full detail receipt */}
                           <Button
                             variant="outline"
                             size="sm"
