@@ -11,6 +11,11 @@ export default async function ReportPage() {
     redirect("/login")
   }
 
+  // Redirect resellers to their own report page
+  if (session.user.role === "reseller") {
+    redirect("/reseller-report")
+  }
+
   // Get transactions for this user
   const transactions = await db.transaction.findMany({
     include: {
