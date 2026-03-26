@@ -4,6 +4,7 @@ import { redirect } from "next/navigation"
 import { db } from "@/lib/db"
 import MemberList from "@/components/member/member-list"
 
+
 export default async function MemberPage() {
   const session = await getServerSession(authOptions)
 
@@ -34,6 +35,9 @@ export default async function MemberPage() {
       name: "asc",
     },
   })
+
+  // Sort case-insensitively in JavaScript to handle PostgreSQL case-sensitive collation
+  resellers.sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()))
 
   return (
     <div className="container mx-auto px-4 py-6">

@@ -208,7 +208,7 @@ export default function TransactionDetail({
                       key={week}
                       className={`p-2 rounded-md text-center ${
                         paidWeeks.has(week)
-                          ? "bg-pink-100 text-gray-800 border border-pink-200"
+                          ? "bg-pink-300 text-gray-800 border border-pink-200"
                           : "bg-gray-100 text-gray-600 border border-gray-200"
                       }`}
                     >
