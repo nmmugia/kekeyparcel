@@ -10,10 +10,15 @@ const globalForPrisma = globalThis as unknown as {
 }
 
 const getPrisma = () => {
-  const connectionString = process.env.DATABASE_URL
+  // Frequently, Next.js statically replaces process.env variables at build time. 
+  // If it was undefined at build time, it becomes the string "undefined".
+  let connectionString = process.env.DATABASE_URL
+  if (connectionString === "undefined") {
+    connectionString = ''
+  }
 
   if (!connectionString) {
-    throw new Error("DATABASE_URL must be set in your .env file")
+    throw new Error("DATABASE_URL must be set and valid in your .env file")
   }
 
   const pool = new Pool({ connectionString })
