@@ -14,6 +14,9 @@ export const metadata: Metadata = {
     generator: 'v0.dev'
 }
 
+import { SpeedInsights } from "@vercel/speed-insights/next"
+import { Analytics } from "@vercel/analytics/react"
+
 export default function RootLayout({
   children,
 }: {
@@ -26,6 +29,8 @@ export default function RootLayout({
           <AuthProvider>
             {children}
             <Toaster />
+            <SpeedInsights />
+            <Analytics />
           </AuthProvider>
         </ThemeProvider>
       </body>
