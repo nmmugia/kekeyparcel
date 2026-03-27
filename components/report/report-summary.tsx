@@ -1,11 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { formatCurrency, formatDate } from "@/lib/utils"
 import { AlertCircle, CheckCircle, Clock } from "lucide-react"
+import { useIntersectionObserver } from "@/hooks/use-intersection-observer"
 
 interface Transaction {
   id: string
@@ -35,6 +36,18 @@ export default function ReportSummary({
   totalNoPayment,
 }: ReportSummaryProps) {
   const [activeTab, setActiveTab] = useState("all")
+  const [displayLimit, setDisplayLimit] = useState(15)
+  const { targetRef, isIntersecting } = useIntersectionObserver()
+
+  useEffect(() => {
+    if (isIntersecting) {
+      setDisplayLimit((prev) => prev + 15)
+    }
+  }, [isIntersecting])
+
+  useEffect(() => {
+    setDisplayLimit(15) // Reset pagination when switching tabs
+  }, [activeTab])
 
   // Calculate totals
   const totalConfirmed = transactionsWithPayment.reduce((sum, t) => sum + t.confirmedAmount, 0)
@@ -124,7 +137,7 @@ export default function ReportSummary({
                   </div>
                 ) : (
                   <>
-                    {noPaymentTransactions.map((transaction) => (
+                    {noPaymentTransactions.slice(0, displayLimit).map((transaction) => (
                       <TransactionCard
                         key={transaction.id}
                         transaction={transaction}
@@ -135,7 +148,7 @@ export default function ReportSummary({
                       />
                     ))}
 
-                    {transactionsWithPayment.map((transaction) => (
+                    {transactionsWithPayment.slice(0, Math.max(0, displayLimit - noPaymentTransactions.length)).map((transaction) => (
                       <TransactionCard
                         key={transaction.id}
                         transaction={transaction}
@@ -165,7 +178,7 @@ export default function ReportSummary({
                   </div>
                 ) : (
                   <>
-                    {noPaymentTransactions.map((transaction) => (
+                    {noPaymentTransactions.slice(0, displayLimit).map((transaction) => (
                       <TransactionCard
                         key={transaction.id}
                         transaction={transaction}
@@ -178,6 +191,7 @@ export default function ReportSummary({
 
                     {transactionsWithPayment
                       .filter((t) => t.remainingAmount > 0 && t.confirmedAmount === 0 && t.processingAmount === 0)
+                      .slice(0, Math.max(0, displayLimit - noPaymentTransactions.length))
                       .map((transaction) => (
                         <TransactionCard
                           key={transaction.id}
@@ -201,6 +215,7 @@ export default function ReportSummary({
                   <>
                     {transactionsWithPayment
                       .filter((t) => t.processingAmount > 0)
+                      .slice(0, displayLimit)
                       .map((transaction) => (
                         <TransactionCard
                           key={transaction.id}
@@ -224,6 +239,7 @@ export default function ReportSummary({
                   <>
                     {transactionsWithPayment
                       .filter((t) => t.confirmedAmount > 0)
+                      .slice(0, displayLimit)
                       .map((transaction) => (
                         <TransactionCard
                           key={transaction.id}
@@ -238,6 +254,13 @@ export default function ReportSummary({
                 )}
               </TabsContent>
             </div>
+
+            {/* Infinite Scroll Trigger */}
+            {(displayLimit < (noPaymentTransactions.length + transactionsWithPayment.length)) && (
+              <div ref={targetRef as any} className="py-4 flex justify-center mt-4 text-sm text-gray-500">
+                Memuat lebih banyak...
+              </div>
+            )}
           </Tabs>
         </CardContent>
       </Card>

@@ -76,6 +76,9 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
     const status = searchParams.get("status") || "all"
+    const search = searchParams.get("search") || ""
+    const page = parseInt(searchParams.get("page") || "1")
+    const limit = 15
 
     // Build the query
     const where: any = {}
@@ -90,6 +93,18 @@ export async function GET(request: Request) {
       where.resellerId = session.user.id
     }
 
+    // Server-side search support
+    if (search) {
+      where.transaction = {
+        OR: [
+          { packageName: { contains: search, mode: "insensitive" } },
+          { customerName: { contains: search, mode: "insensitive" } },
+        ]
+      }
+    }
+
+    const checkHasMore = await db.payment.count({ where })
+
     const payments = await db.payment.findMany({
       where,
       include: {
@@ -98,9 +113,14 @@ export async function GET(request: Request) {
       orderBy: {
         createdAt: "desc",
       },
+      take: limit,
+      skip: (page - 1) * limit,
     })
 
-    return NextResponse.json(payments)
+    return NextResponse.json({
+      payments,
+      hasMore: page * limit < checkHasMore
+    })
   } catch (error) {
     console.error("Error fetching payments:", error)
     return NextResponse.json({ error: "Failed to fetch payments" }, { status: 500 })
