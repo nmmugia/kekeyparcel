@@ -9,12 +9,16 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
 }
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-})
-const adapter = new PrismaNeon(pool)
-
 const getPrisma = () => {
+  const connectionString = process.env.DATABASE_URL
+
+  if (!connectionString) {
+    throw new Error("DATABASE_URL must be set in your .env file")
+  }
+
+  const pool = new Pool({ connectionString })
+  const adapter = new PrismaNeon(pool)
+
   const client = new PrismaClient({
     adapter,
     log: [
@@ -25,8 +29,7 @@ const getPrisma = () => {
   })
 
   client.$on('query', (e: any) => {
-    console.log(`[Prisma] query executed in ${e.duration}ms`)
-    console.log(`Query: ${e.query}`)
+    console.log(`[Prisma Exec] \x1b[32m${e.duration}ms\x1b[0m`)
   })
 
   return client
