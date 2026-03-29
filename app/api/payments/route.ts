@@ -113,7 +113,9 @@ export async function GET(request: Request) {
       }
     }
 
-    const cacheKey = `api:payments:${session.user.role === 'admin' ? 'admin' : session.user.id}:${status}:${page}`
+    const cacheKey = search
+      ? `api:payments:${session.user.role === 'admin' ? 'admin' : session.user.id}:${status}:${page}:search_${search}`
+      : `api:payments:${session.user.role === 'admin' ? 'admin' : session.user.id}:${status}:${page}`
 
     const cachedResponse = await getCachedData(cacheKey, async () => {
       const checkHasMore = await db.payment.count({ where })
