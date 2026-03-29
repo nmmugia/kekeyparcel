@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { db } from "@/lib/db"
-import { getCachedData, invalidateCache } from "@/lib/cache"
+import { getCachedData, invalidateCache, invalidateCachePattern } from "@/lib/cache"
 
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions)
@@ -59,14 +59,10 @@ export async function POST(request: Request) {
       },
     })
 
-    // Fire-and-forget invalidation of critical caches since money was mutated
-    invalidateCache([
-      `api:payments:${session.user.id}:all:1`,
-      `api:payments:admin:all:1`,
-      `report:totals:admin`,
-      `api:reports:transactions:admin:all:1`,
-      `api:reports:transactions:${session.user.id}:all:1`
-    ])
+    // Fire-and-forget wildcard invalidation of ALL related metric pages since a financial event occurred
+    invalidateCachePattern("api:payments:*")
+    invalidateCachePattern("api:reports:transactions:*")
+    invalidateCachePattern("report:totals:*")
 
     return NextResponse.json(payment)
   } catch (error) {

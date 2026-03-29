@@ -57,3 +57,20 @@ export async function invalidateCache(keys: string[]) {
         console.error(`[Upstash Error] Failed to invalidate cache keys ${keys.join(', ')}:`, error)
     }
 }
+
+/**
+ * Searches and wipes out all dynamically generated keys that match a specific wildcard string.
+ * Essential for 24hr caches. E.g. pattern = "api:payments:*" deletes every page/search in existence.
+ */
+export async function invalidateCachePattern(pattern: string) {
+    if (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) return
+    try {
+        const matches = await redis.keys(pattern)
+        if (matches.length > 0) {
+            await redis.del(...matches)
+            console.log(`[Upstash 🗑️ INVALIDATED PATTERN] ${pattern} (deleted ${matches.length} items)`)
+        }
+    } catch (error) {
+        console.error(`[Upstash Error] Failed to invalidate pattern ${pattern}:`, error)
+    }
+}

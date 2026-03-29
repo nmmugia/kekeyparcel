@@ -78,7 +78,7 @@ export async function GET(request: Request) {
                 hasMore: page * limit < checkHasMore,
                 totalCount: checkHasMore
             }
-        }, 60)
+        }, 86400) // 24 hours TTL
 
         return NextResponse.json(cachedResponse)
     } catch (error) {

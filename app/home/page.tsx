@@ -30,7 +30,7 @@ export default async function HomePage() {
         },
       })
     },
-    300 // 5 Minutes TTL
+    86400 // 1 Full Day TTL
   )
 
   return (

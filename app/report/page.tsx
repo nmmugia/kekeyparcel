@@ -57,7 +57,7 @@ export default async function ReportPage() {
         unpaid: Math.max(0, transactionCount - confirmedCount.length - processingCount.length)
       }
     }
-  }, 120)
+  }, 86400) // 1 Full Day TTL
 
   return (
     <div className="container mx-auto px-4 py-6">

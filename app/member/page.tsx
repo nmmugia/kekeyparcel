@@ -38,7 +38,7 @@ export default async function MemberPage() {
     rawResellers.sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()))
     
     return rawResellers
-  }, 120)
+  }, 86400) // 1 Full Day TTL
 
   return (
     <div className="container mx-auto px-4 py-6">
