@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { db } from "@/lib/db"
+import { getCachedData } from "@/lib/cache"
 
 export async function GET(request: Request) {
     const session = await getServerSession(authOptions)
@@ -37,43 +38,49 @@ export async function GET(request: Request) {
             where.payments = paymentFilter
         }
 
-        const checkHasMore = await db.transaction.count({ where })
+        const cacheKey = `api:reports:transactions:${session.user.role === 'admin' ? 'admin' : session.user.id}:${status}:${page}`
 
-        const rawTransactions = await db.transaction.findMany({
-            where,
-            include: {
-                payments: true
-            },
-            orderBy: {
-                createdAt: "desc",
-            },
-            take: limit,
-            skip: (page - 1) * limit,
-        })
+        const cachedResponse = await getCachedData(cacheKey, async () => {
+            const checkHasMore = await db.transaction.count({ where })
 
-        // Compute derived properties for UI mapping
-        const transactions = rawTransactions.map(t => {
-            const confirmedAmount = t.payments.filter(p => p.status === "confirmed").reduce((s, p) => s + p.amount, 0)
-            const processingAmount = t.payments.filter(p => p.status === "process").reduce((s, p) => s + p.amount, 0)
+            const rawTransactions = await db.transaction.findMany({
+                where,
+                include: {
+                    payments: true
+                },
+                orderBy: {
+                    createdAt: "desc",
+                },
+                take: limit,
+                skip: (page - 1) * limit,
+            })
 
-            let computedStatus = "nopayment"
-            if (confirmedAmount > 0) computedStatus = "confirmed"
-            else if (processingAmount > 0) computedStatus = "processing"
+            // Compute derived properties for UI mapping
+            const transactions = rawTransactions.map(t => {
+                const confirmedAmount = t.payments.filter(p => p.status === "confirmed").reduce((s, p) => s + p.amount, 0)
+                const processingAmount = t.payments.filter(p => p.status === "process").reduce((s, p) => s + p.amount, 0)
+
+                let computedStatus = "nopayment"
+                if (confirmedAmount > 0) computedStatus = "confirmed"
+                else if (processingAmount > 0) computedStatus = "processing"
+
+                return {
+                    ...t,
+                    computedStatus,
+                    confirmedAmount,
+                    processingAmount,
+                    remainingAmount: (t.pricePerWeek * t.tenor) - confirmedAmount - processingAmount
+                }
+            })
 
             return {
-                ...t,
-                computedStatus,
-                confirmedAmount,
-                processingAmount,
-                remainingAmount: (t.pricePerWeek * t.tenor) - confirmedAmount - processingAmount
+                transactions,
+                hasMore: page * limit < checkHasMore,
+                totalCount: checkHasMore
             }
-        })
+        }, 60)
 
-        return NextResponse.json({
-            transactions,
-            hasMore: page * limit < checkHasMore,
-            totalCount: checkHasMore
-        })
+        return NextResponse.json(cachedResponse)
     } catch (error) {
         console.error("Error fetching paginated report transactions:", error)
         return NextResponse.json({ error: "Failed to fetch transactions" }, { status: 500 })

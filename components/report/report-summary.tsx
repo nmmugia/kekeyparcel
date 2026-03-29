@@ -181,7 +181,7 @@ export default function ReportSummary({ totals }: ReportSummaryProps) {
 }
 
 interface TransactionCardProps {
-  transaction: Transaction
+  transaction: any
   status: "nopayment" | "processing" | "confirmed"
   confirmedAmount: number
   processingAmount: number

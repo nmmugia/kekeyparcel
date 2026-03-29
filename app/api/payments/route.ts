@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { db } from "@/lib/db"
+import { getCachedData, invalidateCache } from "@/lib/cache"
 
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions)
@@ -58,6 +59,15 @@ export async function POST(request: Request) {
       },
     })
 
+    // Fire-and-forget invalidation of critical caches since money was mutated
+    invalidateCache([
+      `api:payments:${session.user.id}:all:1`,
+      `api:payments:admin:all:1`,
+      `report:totals:admin`,
+      `api:reports:transactions:admin:all:1`,
+      `api:reports:transactions:${session.user.id}:all:1`
+    ])
+
     return NextResponse.json(payment)
   } catch (error) {
     console.error("Error creating payment:", error)
@@ -103,24 +113,30 @@ export async function GET(request: Request) {
       }
     }
 
-    const checkHasMore = await db.payment.count({ where })
+    const cacheKey = `api:payments:${session.user.role === 'admin' ? 'admin' : session.user.id}:${status}:${page}`
 
-    const payments = await db.payment.findMany({
-      where,
-      include: {
-        transaction: true
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-      take: limit,
-      skip: (page - 1) * limit,
-    })
+    const cachedResponse = await getCachedData(cacheKey, async () => {
+      const checkHasMore = await db.payment.count({ where })
 
-    return NextResponse.json({
-      payments,
-      hasMore: page * limit < checkHasMore
-    })
+      const payments = await db.payment.findMany({
+        where,
+        include: {
+          transaction: true
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+        take: limit,
+        skip: (page - 1) * limit,
+      })
+
+      return {
+        payments,
+        hasMore: page * limit < checkHasMore
+      }
+    }, 60) // Cache API paginated block for 60 seconds
+
+    return NextResponse.json(cachedResponse)
   } catch (error) {
     console.error("Error fetching payments:", error)
     return NextResponse.json({ error: "Failed to fetch payments" }, { status: 500 })
