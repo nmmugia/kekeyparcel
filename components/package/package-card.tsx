@@ -16,7 +16,14 @@ export default function PackageCard({ package: pkg, isAdmin }: PackageCardProps)
     >
       <div className="relative h-40 bg-gray-100">
         {pkg.photo ? (
-          <Image src={pkg.photo || "/placeholder.svg"} alt={pkg.name} fill className="object-cover" />
+          <Image 
+            src={pkg.photo || "/placeholder.svg"} 
+            alt={pkg.name} 
+            fill 
+            className="object-cover"
+            loading="lazy"
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+          />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center bg-pink-50">
             <span className="text-pink-300 text-lg">No Image</span>
