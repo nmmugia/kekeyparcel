@@ -16,47 +16,49 @@ export default async function ReportPage() {
     redirect("/reseller-report")
   }
 
-  // Get transactions for this user
-  const transactions = await db.transaction.findMany({
-    include: {
-      payments: true,
-    },
-    orderBy: {
-      createdAt: "desc",
-    },
+  // Instantly aggregate the totals deep inside Postgres using Prisma $queryRaw
+  const totalsResult: any = await db.$queryRaw`
+    SELECT 
+      COALESCE(SUM("pricePerWeek" * "tenor"), 0) as "grandTotal",
+      (SELECT COALESCE(SUM(amount), 0) FROM "Payment" WHERE status = 'confirmed') as "totalConfirmed",
+      (SELECT COALESCE(SUM(amount), 0) FROM "Payment" WHERE status = 'process') as "totalProcessing"
+    FROM "Transaction"
+  `
+  
+  const grandTotal = Number(totalsResult[0]?.grandTotal || 0)
+  const totalConfirmed = Number(totalsResult[0]?.totalConfirmed || 0)
+  const totalProcessing = Number(totalsResult[0]?.totalProcessing || 0)
+  const totalRemaining = grandTotal - totalConfirmed - totalProcessing
+
+  // Just grab simple count stats for UI
+  const transactionCount = await db.transaction.count()
+  const confirmedCount = await db.payment.groupBy({
+    by: ['transactionId'],
+    where: { status: 'confirmed' },
+  })
+  const processingCount = await db.payment.groupBy({
+    by: ['transactionId'],
+    where: { status: 'process' },
   })
 
-  // Group transactions by payment status
-  const noPaymentTransactions = transactions.filter((t) => t.payments.length === 0)
-  const withPaymentTransactions = transactions.filter((t) => t.payments.length > 0)
-
-  // Calculate total amounts
-  const totalNoPayment = noPaymentTransactions.reduce((sum, t) => sum + t.pricePerWeek * t.tenor, 0)
-
-  // For transactions with payments, calculate confirmed payments
-  const transactionsWithPaymentStatus = withPaymentTransactions.map((t) => {
-    const confirmedPayments = t.payments.filter((p) => p.status === "confirmed")
-    const processingPayments = t.payments.filter((p) => p.status === "process")
-
-    const confirmedAmount = confirmedPayments.reduce((sum, p) => sum + p.amount, 0)
-    const processingAmount = processingPayments.reduce((sum, p) => sum + p.amount, 0)
-
-    return {
-      ...t,
-      confirmedAmount,
-      processingAmount,
-      remainingAmount: t.pricePerWeek * t.tenor - confirmedAmount - processingAmount,
+  // Group totals payload securely bypassing megabytes of JSON transfer
+  const reportTotals = {
+    grandTotal,
+    totalConfirmed,
+    totalProcessing,
+    totalRemaining,
+    counts: {
+      total: transactionCount,
+      confirmed: confirmedCount.length,
+      processing: processingCount.length,
+      unpaid: Math.max(0, transactionCount - confirmedCount.length - processingCount.length)
     }
-  })
+  }
 
   return (
     <div className="container mx-auto px-4 py-6">
       <h1 className="text-2xl font-bold mb-6">Laporan Pendapatan</h1>
-      <ReportSummary
-        noPaymentTransactions={noPaymentTransactions}
-        transactionsWithPayment={transactionsWithPaymentStatus}
-        totalNoPayment={totalNoPayment}
-      />
+      <ReportSummary totals={reportTotals} />
     </div>
   )
 }

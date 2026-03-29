@@ -8,53 +8,66 @@ import { formatCurrency, formatDate } from "@/lib/utils"
 import { AlertCircle, CheckCircle, Clock } from "lucide-react"
 import { useIntersectionObserver } from "@/hooks/use-intersection-observer"
 
-interface Transaction {
-  id: string
-  packageName: string
-  customerName: string
-  pricePerWeek: number
-  tenor: number
-  createdAt: string
-  payments: any[]
-}
-
-interface TransactionWithPaymentStatus extends Transaction {
-  confirmedAmount: number
-  processingAmount: number
-  remainingAmount: number
-}
+import { LoadingSpinner } from "@/components/loading-spinner"
 
 interface ReportSummaryProps {
-  noPaymentTransactions: Transaction[]
-  transactionsWithPayment: TransactionWithPaymentStatus[]
-  totalNoPayment: number
+  totals: {
+    grandTotal: number
+    totalConfirmed: number
+    totalProcessing: number
+    totalRemaining: number
+    counts: {
+      total: number
+      confirmed: number
+      processing: number
+      unpaid: number
+    }
+  }
 }
 
-export default function ReportSummary({
-  noPaymentTransactions,
-  transactionsWithPayment,
-  totalNoPayment,
-}: ReportSummaryProps) {
+export default function ReportSummary({ totals }: ReportSummaryProps) {
   const [activeTab, setActiveTab] = useState("all")
-  const [displayLimit, setDisplayLimit] = useState(15)
+  const [transactions, setTransactions] = useState<any[]>([])
+  const [page, setPage] = useState(1)
+  const [hasMore, setHasMore] = useState(true)
+  const [isLoading, setIsLoading] = useState(false)
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
+  
   const { targetRef, isIntersecting } = useIntersectionObserver()
 
   useEffect(() => {
-    if (isIntersecting) {
-      setDisplayLimit((prev) => prev + 15)
+    setTransactions([])
+    setPage(1)
+    setHasMore(true)
+    fetchTransactions(1, true)
+  }, [activeTab])
+
+  useEffect(() => {
+    if (isIntersecting && !isLoading && !isLoadingMore && hasMore) {
+      setPage((prev) => {
+        const next = prev + 1
+        fetchTransactions(next, false)
+        return next
+      })
     }
   }, [isIntersecting])
 
-  useEffect(() => {
-    setDisplayLimit(15) // Reset pagination when switching tabs
-  }, [activeTab])
+  const fetchTransactions = async (targetPage: number, isNew: boolean) => {
+    if (isNew) setIsLoading(true)
+    else setIsLoadingMore(true)
 
-  // Calculate totals
-  const totalConfirmed = transactionsWithPayment.reduce((sum, t) => sum + t.confirmedAmount, 0)
-  const totalProcessing = transactionsWithPayment.reduce((sum, t) => sum + t.processingAmount, 0)
-  const totalRemaining = transactionsWithPayment.reduce((sum, t) => sum + t.remainingAmount, 0)
-
-  const grandTotal = totalNoPayment + totalConfirmed + totalProcessing + totalRemaining
+    try {
+      const res = await fetch(`/api/reports/transactions?status=${activeTab}&page=${targetPage}`)
+      const data = await res.json()
+      setTransactions(prev => isNew ? data.transactions : [...prev, ...data.transactions])
+      setHasMore(data.hasMore)
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setIsLoading(false)
+      setIsLoadingMore(false)
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -66,9 +79,9 @@ export default function ReportSummary({
             <CardDescription>Semua transaksi</CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold text-pink-600">{formatCurrency(grandTotal)}</p>
+            <p className="text-2xl font-bold text-pink-600">{formatCurrency(totals.grandTotal)}</p>
             <p className="text-sm text-gray-500 mt-1">
-              {noPaymentTransactions.length + transactionsWithPayment.length} Transaksi
+              {totals.counts.total} Transaksi
             </p>
           </CardContent>
         </Card>
@@ -79,9 +92,9 @@ export default function ReportSummary({
             <CardDescription>Sudah diterima</CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold text-green-600">{formatCurrency(totalConfirmed)}</p>
+            <p className="text-2xl font-bold text-green-600">{formatCurrency(totals.totalConfirmed)}</p>
             <p className="text-sm text-gray-500 mt-1">
-              {transactionsWithPayment.filter((t) => t.confirmedAmount > 0).length} Transaksi
+              {totals.counts.confirmed} Transaksi
             </p>
           </CardContent>
         </Card>
@@ -92,9 +105,9 @@ export default function ReportSummary({
             <CardDescription>Menunggu konfirmasi</CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold text-yellow-600">{formatCurrency(totalProcessing)}</p>
+            <p className="text-2xl font-bold text-yellow-600">{formatCurrency(totals.totalProcessing)}</p>
             <p className="text-sm text-gray-500 mt-1">
-              {transactionsWithPayment.filter((t) => t.processingAmount > 0).length} Transaksi
+              {totals.counts.processing} Transaksi
             </p>
           </CardContent>
         </Card>
@@ -105,10 +118,9 @@ export default function ReportSummary({
             <CardDescription>Semua transaksi</CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold text-gray-600">{formatCurrency(totalNoPayment + totalRemaining)}</p>
+            <p className="text-2xl font-bold text-gray-600">{formatCurrency(totals.totalRemaining)}</p>
             <p className="text-sm text-gray-500 mt-1">
-              {noPaymentTransactions.length + transactionsWithPayment.filter((t) => t.remainingAmount > 0).length}{" "}
-              Transaksi
+              {totals.counts.unpaid} Transaksi
             </p>
           </CardContent>
         </Card>
@@ -130,137 +142,37 @@ export default function ReportSummary({
             </TabsList>
 
             <div className="mt-4">
-              <TabsContent value="all" className="space-y-4">
-                {noPaymentTransactions.length === 0 && transactionsWithPayment.length === 0 ? (
-                  <div className="bg-gray-50 p-6 rounded-lg text-center">
-                    <p className="text-gray-500">Belum ada transaksi</p>
-                  </div>
-                ) : (
-                  <>
-                    {noPaymentTransactions.slice(0, displayLimit).map((transaction) => (
-                      <TransactionCard
-                        key={transaction.id}
-                        transaction={transaction}
-                        status="nopayment"
-                        confirmedAmount={0}
-                        processingAmount={0}
-                        remainingAmount={transaction.pricePerWeek * transaction.tenor}
-                      />
-                    ))}
-
-                    {transactionsWithPayment.slice(0, Math.max(0, displayLimit - noPaymentTransactions.length)).map((transaction) => (
-                      <TransactionCard
-                        key={transaction.id}
-                        transaction={transaction}
-                        status={
-                          transaction.confirmedAmount > 0
-                            ? "confirmed"
-                            : transaction.processingAmount > 0
-                              ? "processing"
-                              : "nopayment"
-                        }
-                        confirmedAmount={transaction.confirmedAmount}
-                        processingAmount={transaction.processingAmount}
-                        remainingAmount={transaction.remainingAmount}
-                      />
-                    ))}
-                  </>
-                )}
-              </TabsContent>
-
-              <TabsContent value="nopayment" className="space-y-4">
-                {noPaymentTransactions.length === 0 &&
-                transactionsWithPayment.filter(
-                  (t) => t.remainingAmount > 0 && t.confirmedAmount === 0 && t.processingAmount === 0,
-                ).length === 0 ? (
-                  <div className="bg-gray-50 p-6 rounded-lg text-center">
-                    <p className="text-gray-500">Tidak ada transaksi yang belum dibayar</p>
-                  </div>
-                ) : (
-                  <>
-                    {noPaymentTransactions.slice(0, displayLimit).map((transaction) => (
-                      <TransactionCard
-                        key={transaction.id}
-                        transaction={transaction}
-                        status="nopayment"
-                        confirmedAmount={0}
-                        processingAmount={0}
-                        remainingAmount={transaction.pricePerWeek * transaction.tenor}
-                      />
-                    ))}
-
-                    {transactionsWithPayment
-                      .filter((t) => t.remainingAmount > 0 && t.confirmedAmount === 0 && t.processingAmount === 0)
-                      .slice(0, Math.max(0, displayLimit - noPaymentTransactions.length))
-                      .map((transaction) => (
+              {['all', 'nopayment', 'processing', 'confirmed'].map((statusValue) => (
+                <TabsContent key={statusValue} value={statusValue} className="space-y-4">
+                  {isLoading ? (
+                    <div className="py-10 flex justify-center"><LoadingSpinner /></div>
+                  ) : transactions.length === 0 ? (
+                    <div className="bg-gray-50 p-6 rounded-lg text-center">
+                      <p className="text-gray-500">Tidak ada transaksi yang cocok</p>
+                    </div>
+                  ) : (
+                    <>
+                      {transactions.map((t) => (
                         <TransactionCard
-                          key={transaction.id}
-                          transaction={transaction}
-                          status="nopayment"
-                          confirmedAmount={transaction.confirmedAmount}
-                          processingAmount={transaction.processingAmount}
-                          remainingAmount={transaction.remainingAmount}
+                          key={t.id}
+                          transaction={t}
+                          status={t.computedStatus}
+                          confirmedAmount={t.confirmedAmount}
+                          processingAmount={t.processingAmount}
+                          remainingAmount={t.remainingAmount}
                         />
                       ))}
-                  </>
-                )}
-              </TabsContent>
-
-              <TabsContent value="processing" className="space-y-4">
-                {transactionsWithPayment.filter((t) => t.processingAmount > 0).length === 0 ? (
-                  <div className="bg-gray-50 p-6 rounded-lg text-center">
-                    <p className="text-gray-500">Tidak ada transaksi yang sedang diproses</p>
-                  </div>
-                ) : (
-                  <>
-                    {transactionsWithPayment
-                      .filter((t) => t.processingAmount > 0)
-                      .slice(0, displayLimit)
-                      .map((transaction) => (
-                        <TransactionCard
-                          key={transaction.id}
-                          transaction={transaction}
-                          status="processing"
-                          confirmedAmount={transaction.confirmedAmount}
-                          processingAmount={transaction.processingAmount}
-                          remainingAmount={transaction.remainingAmount}
-                        />
-                      ))}
-                  </>
-                )}
-              </TabsContent>
-
-              <TabsContent value="confirmed" className="space-y-4">
-                {transactionsWithPayment.filter((t) => t.confirmedAmount > 0).length === 0 ? (
-                  <div className="bg-gray-50 p-6 rounded-lg text-center">
-                    <p className="text-gray-500">Tidak ada transaksi yang sudah dikonfirmasi</p>
-                  </div>
-                ) : (
-                  <>
-                    {transactionsWithPayment
-                      .filter((t) => t.confirmedAmount > 0)
-                      .slice(0, displayLimit)
-                      .map((transaction) => (
-                        <TransactionCard
-                          key={transaction.id}
-                          transaction={transaction}
-                          status="confirmed"
-                          confirmedAmount={transaction.confirmedAmount}
-                          processingAmount={transaction.processingAmount}
-                          remainingAmount={transaction.remainingAmount}
-                        />
-                      ))}
-                  </>
-                )}
-              </TabsContent>
+                      
+                      {hasMore && (
+                        <div ref={targetRef as any} className="py-4 flex justify-center mt-4">
+                          {isLoadingMore ? <LoadingSpinner /> : <span className="text-sm text-gray-400">Loading ke bawah...</span>}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </TabsContent>
+              ))}
             </div>
-
-            {/* Infinite Scroll Trigger */}
-            {(displayLimit < (noPaymentTransactions.length + transactionsWithPayment.length)) && (
-              <div ref={targetRef as any} className="py-4 flex justify-center mt-4 text-sm text-gray-500">
-                Memuat lebih banyak...
-              </div>
-            )}
           </Tabs>
         </CardContent>
       </Card>
