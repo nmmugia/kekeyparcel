@@ -34,9 +34,9 @@ export async function GET(request: Request) {
             orderBy: { createdAt: "desc" },
         })
 
-        const transactions: any[] = rawTransactions.map(t => ({
+        const transactions: any[] = rawTransactions.map((t: any) => ({
             ...t,
-            payments: t.payments.map((p) => ({
+            payments: t.payments.map((p: any) => ({
                 ...p,
                 weekNumbers: typeof p.weekNumbers === "string" ? JSON.parse(p.weekNumbers) : p.weekNumbers
             }))
