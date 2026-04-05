@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { db } from "@/lib/db"
+import { getCachedData, invalidateCachePattern } from "@/lib/cache"
 
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions)
@@ -32,13 +33,16 @@ export async function POST(request: Request) {
       },
     })
 
+    // Bust cached package lists so new packages appear on /home immediately
+    await invalidateCachePattern("home:packageTypes*")
+    await invalidateCachePattern("api:packages*")
+
     return NextResponse.json(newPackage)
   } catch (error) {
     console.error("Error creating package:", error)
     return NextResponse.json({ error: "Failed to create package" }, { status: 500 })
   }
 }
-
 
 export async function GET(request: Request) {
   const session = await getServerSession(authOptions)
@@ -48,16 +52,16 @@ export async function GET(request: Request) {
   }
 
   try {
+    // Package list rarely changes — cache for 24 hours
+    const packages = await getCachedData(
+      "api:packages:all",
+      async () => db.package.findMany({ orderBy: { createdAt: "desc" } }),
+      86400 // 24 hours TTL
+    )
 
-    const payments = await db.package.findMany({
-      orderBy: {
-        createdAt: "desc",
-      },
-    })
-
-    return NextResponse.json(payments)
+    return NextResponse.json(packages)
   } catch (error) {
-    console.error("Error fetching payments:", error)
-    return NextResponse.json({ error: "Failed to fetch payments" }, { status: 500 })
+    console.error("Error fetching packages:", error)
+    return NextResponse.json({ error: "Failed to fetch packages" }, { status: 500 })
   }
 }

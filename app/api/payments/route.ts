@@ -60,13 +60,19 @@ export async function POST(request: Request) {
       },
     })
 
-    // Fire-and-forget wildcard invalidation of ALL related metric pages since a financial event occurred
-    invalidateCachePattern("api:payments:*")
-    invalidateCachePattern("api:reports:transactions:*")
-    invalidateCachePattern("report:totals:*")
+    // Bust ALL related caches synchronously so nothing stale leaks through
+    await Promise.all([
+      invalidateCachePattern("api:payments:*"),
+      invalidateCachePattern("api:reports:transactions:*"),
+      invalidateCachePattern("report:totals:*"),
+      invalidateCachePattern("api:stats:dashboard"),
+      invalidateCachePattern(`api:reseller-report:${resellerId}`),
+      invalidateCachePattern(`my-packages:${resellerId}`),
+      invalidateCachePattern(`transaction:detail:${transactionId}`),
+    ])
 
-    // 🔥 Advanced Cache Warming: Instantly rebuild and push the default primary pages into Redis in the background so the user NEVER suffers a cache miss penalty after paying!
-    Promise.all([
+    // 🔥 Cache Warming: Rebuild the default primary pages synchronously so the user never suffers a cold-miss after paying
+    await Promise.all([
       (async () => {
         // Rebuild Admin's Default Page 1
         const payments = await db.payment.findMany({ include: { transaction: true }, orderBy: { createdAt: "desc" }, take: 15 })
@@ -81,7 +87,7 @@ export async function POST(request: Request) {
           await redis.set(`api:payments:${session.user.id}:all:1`, { payments, hasMore: 15 < total }, { ex: 86400 })
         }
       })()
-    ]).catch(console.error)
+    ])
 
     return NextResponse.json(payment)
   } catch (error) {

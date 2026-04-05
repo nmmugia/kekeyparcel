@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { db } from "@/lib/db"
+import { getCachedData } from "@/lib/cache"
 
 export async function GET(request: Request) {
     const session = await getServerSession(authOptions)
@@ -23,22 +24,24 @@ export async function GET(request: Request) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
         }
 
-        const transactions = await db.transaction.findMany({
-            where: {
-                resellerId,
-            },
-            include: {
-                payments: true,
-                deletionRequests: {
-                    orderBy: {
-                        createdAt: "desc",
+        // Cache per-reseller report data for 5 minutes.
+        // This is the heavy query that feeds /reseller-report (2.74s LCP).
+        const transactions = await getCachedData(
+            `api:reseller-report:${resellerId}`,
+            async () => {
+                return db.transaction.findMany({
+                    where: { resellerId },
+                    include: {
+                        payments: true,
+                        deletionRequests: {
+                            orderBy: { createdAt: "desc" },
+                        },
                     },
-                },
+                    orderBy: { createdAt: "desc" },
+                })
             },
-            orderBy: {
-                createdAt: "desc",
-            },
-        })
+            86400 // 24h TTL — invalidated on write by payment/transaction mutations
+        )
 
         return NextResponse.json(transactions)
     } catch (error) {

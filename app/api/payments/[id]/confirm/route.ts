@@ -21,28 +21,35 @@ export async function POST(request: Request, { params }: { params: { id: string 
         status: "confirmed",
       },
     })
-    // Fire-and-forget wildcard invalidation of ALL related metric pages since a financial event occurred
-    invalidateCachePattern("api:payments:*")
-    invalidateCachePattern("api:reports:transactions:*")
-    invalidateCachePattern("report:totals:*")
+    // Bust ALL related caches synchronously
+    const payment_full = await db.payment.findUnique({ where: { id: params.id }, include: { transaction: true } })
+    await Promise.all([
+      invalidateCachePattern("api:payments:*"),
+      invalidateCachePattern("api:reports:transactions:*"),
+      invalidateCachePattern("report:totals:*"),
+      invalidateCachePattern("api:stats:dashboard"),
+      ...(payment_full ? [
+        invalidateCachePattern(`api:reseller-report:${payment_full.transaction.resellerId}`),
+        invalidateCachePattern(`my-packages:${payment_full.transaction.resellerId}`),
+        invalidateCachePattern(`transaction:detail:${payment_full.transactionId}`),
+      ] : []),
+    ])
 
-    // 🔥 Advanced Cache Warming: Instantly rebuild and push the default primary pages into Redis in the background so the user NEVER suffers a cache miss penalty after paying!
-    Promise.all([
+    // Cache Warming: Rebuild default pages synchronously
+    await Promise.all([
       (async () => {
-        // Rebuild Admin's Default Page 1
         const payments = await db.payment.findMany({ include: { transaction: true }, orderBy: { createdAt: "desc" }, take: 15 })
         const total = await db.payment.count()
         await redis.set("api:payments:admin:all:1", { payments, hasMore: 15 < total }, { ex: 86400 })
       })(),
       (async () => {
-        // Rebuild Current User's Default Page 1
         if (session.user.role === "reseller") {
           const payments = await db.payment.findMany({ where: { resellerId: session.user.id }, include: { transaction: true }, orderBy: { createdAt: "desc" }, take: 15 })
           const total = await db.payment.count({ where: { resellerId: session.user.id } })
           await redis.set(`api:payments:${session.user.id}:all:1`, { payments, hasMore: 15 < total }, { ex: 86400 })
         }
       })()
-    ]).catch(console.error)
+    ])
     return NextResponse.json(payment)
   } catch (error) {
     console.error("Error confirming payment:", error)
