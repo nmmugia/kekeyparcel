@@ -79,6 +79,7 @@
     "tailwindcss-animate": "^1.0.7",
     "uuid": "^11.1.0",
     "vaul": "^0.9.6",
+    "@upstash/redis": "^1.37.0",
     "zod": "^3.24.1"
   },
   "devDependencies": {
