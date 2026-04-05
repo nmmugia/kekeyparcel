@@ -3,6 +3,24 @@ import { getToken } from "next-auth/jwt"
 import type { NextRequest } from "next/server"
 
 export async function middleware(req: NextRequest) {
+  // Check if system is in maintenance mode
+  const isMaintenanceMode = process.env.MAINTENANCE_MODE === "true"
+
+  if (isMaintenanceMode) {
+    if (req.nextUrl.pathname.startsWith("/api")) {
+      return NextResponse.json({ error: "System under maintenance" }, { status: 503 })
+    }
+    if (!req.nextUrl.pathname.startsWith("/maintenance")) {
+      return NextResponse.rewrite(new URL("/maintenance", req.url))
+    }
+    return NextResponse.next()
+  }
+
+  // If not in maintenance mode but trying to access /maintenance, redirect away
+  if (req.nextUrl.pathname.startsWith("/maintenance")) {
+    return NextResponse.redirect(new URL("/login", req.url))
+  }
+
   const token = await getToken({ req })
   const isAuthenticated = !!token
 

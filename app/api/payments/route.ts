@@ -2,8 +2,6 @@ import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { db } from "@/lib/db"
-import { getCachedData, invalidateCachePattern } from "@/lib/cache"
-import { redis } from "@/lib/redis"
 
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions)
@@ -48,7 +46,7 @@ export async function POST(request: Request) {
       data: {
         transactionId,
         amount,
-        weekNumbers,
+        weekNumbers: JSON.stringify(weekNumbers),
         paymentMethod,
         bankName,
         proofImage,
@@ -60,42 +58,12 @@ export async function POST(request: Request) {
       },
     })
 
-    // Bust ALL related caches synchronously so nothing stale leaks through
-    await Promise.all([
-      invalidateCachePattern("api:payments:*"),
-      invalidateCachePattern("api:reports:transactions:*"),
-      invalidateCachePattern("report:totals:*"),
-      invalidateCachePattern("api:stats:dashboard"),
-      invalidateCachePattern(`api:reseller-report:${resellerId}`),
-      invalidateCachePattern(`my-packages:${resellerId}`),
-      invalidateCachePattern(`transaction:detail:${transactionId}`),
-    ])
-
-    // 🔥 Cache Warming: Rebuild the default primary pages synchronously so the user never suffers a cold-miss after paying
-    await Promise.all([
-      (async () => {
-        // Rebuild Admin's Default Page 1
-        const payments = await db.payment.findMany({ include: { transaction: true }, orderBy: { createdAt: "desc" }, take: 15 })
-        const total = await db.payment.count()
-        await redis.set("api:payments:admin:all:1", { payments, hasMore: 15 < total }, { ex: 86400 })
-      })(),
-      (async () => {
-        // Rebuild Current User's Default Page 1
-        if (session.user.role === "reseller") {
-          const payments = await db.payment.findMany({ where: { resellerId: session.user.id }, include: { transaction: true }, orderBy: { createdAt: "desc" }, take: 15 })
-          const total = await db.payment.count({ where: { resellerId: session.user.id } })
-          await redis.set(`api:payments:${session.user.id}:all:1`, { payments, hasMore: 15 < total }, { ex: 86400 })
-        }
-      })()
-    ])
-
     return NextResponse.json(payment)
   } catch (error) {
     console.error("Error creating payment:", error)
     return NextResponse.json({ error: "Failed to create payment" }, { status: 500 })
   }
 }
-
 
 export async function GET(request: Request) {
   const session = await getServerSession(authOptions)
@@ -134,35 +102,31 @@ export async function GET(request: Request) {
       }
     }
 
-    const cacheKey = search
-      ? `api:payments:${session.user.role === 'admin' ? 'admin' : session.user.id}:${status}:${page}:search_${search}`
-      : `api:payments:${session.user.role === 'admin' ? 'admin' : session.user.id}:${status}:${page}`
+    const checkHasMore = await db.payment.count({ where })
 
-    const cachedResponse = await getCachedData(cacheKey, async () => {
-      const checkHasMore = await db.payment.count({ where })
+    const rawPayments = await db.payment.findMany({
+      where,
+      include: {
+        transaction: true
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+      take: limit,
+      skip: (page - 1) * limit,
+    })
 
-      const payments = await db.payment.findMany({
-        where,
-        include: {
-          transaction: true
-        },
-        orderBy: {
-          createdAt: "desc",
-        },
-        take: limit,
-        skip: (page - 1) * limit,
-      })
+    const payments: any[] = rawPayments.map(p => ({
+      ...p,
+      weekNumbers: typeof p.weekNumbers === "string" ? JSON.parse(p.weekNumbers) : p.weekNumbers
+    }))
 
-      return {
-        payments,
-        hasMore: page * limit < checkHasMore
-      }
-    }, 60) // Cache API paginated block for 60 seconds
-
-    return NextResponse.json(cachedResponse)
+    return NextResponse.json({
+      payments,
+      hasMore: page * limit < checkHasMore
+    })
   } catch (error) {
     console.error("Error fetching payments:", error)
     return NextResponse.json({ error: "Failed to fetch payments" }, { status: 500 })
   }
 }
-

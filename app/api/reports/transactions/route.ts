@@ -2,7 +2,6 @@ import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { db } from "@/lib/db"
-import { getCachedData } from "@/lib/cache"
 
 export async function GET(request: Request) {
     const session = await getServerSession(authOptions)
@@ -38,49 +37,47 @@ export async function GET(request: Request) {
             where.payments = paymentFilter
         }
 
-        const cacheKey = `api:reports:transactions:${session.user.role === 'admin' ? 'admin' : session.user.id}:${status}:${page}`
+        const checkHasMore = await db.transaction.count({ where })
 
-        const cachedResponse = await getCachedData(cacheKey, async () => {
-            const checkHasMore = await db.transaction.count({ where })
+        const rawTransactions = await db.transaction.findMany({
+            where,
+            include: {
+                payments: true
+            },
+            orderBy: {
+                createdAt: "desc",
+            },
+            take: limit,
+            skip: (page - 1) * limit,
+        })
 
-            const rawTransactions = await db.transaction.findMany({
-                where,
-                include: {
-                    payments: true
-                },
-                orderBy: {
-                    createdAt: "desc",
-                },
-                take: limit,
-                skip: (page - 1) * limit,
-            })
+        // Compute derived properties for UI mapping
+        const transactions = rawTransactions.map(t => {
+            const confirmedAmount = t.payments.filter(p => p.status === "confirmed").reduce((s, p) => s + p.amount, 0)
+            const processingAmount = t.payments.filter(p => p.status === "process").reduce((s, p) => s + p.amount, 0)
 
-            // Compute derived properties for UI mapping
-            const transactions = rawTransactions.map(t => {
-                const confirmedAmount = t.payments.filter(p => p.status === "confirmed").reduce((s, p) => s + p.amount, 0)
-                const processingAmount = t.payments.filter(p => p.status === "process").reduce((s, p) => s + p.amount, 0)
-
-                let computedStatus = "nopayment"
-                if (confirmedAmount > 0) computedStatus = "confirmed"
-                else if (processingAmount > 0) computedStatus = "processing"
-
-                return {
-                    ...t,
-                    computedStatus,
-                    confirmedAmount,
-                    processingAmount,
-                    remainingAmount: (t.pricePerWeek * t.tenor) - confirmedAmount - processingAmount
-                }
-            })
+            let computedStatus = "nopayment"
+            if (confirmedAmount > 0) computedStatus = "confirmed"
+            else if (processingAmount > 0) computedStatus = "processing"
 
             return {
-                transactions,
-                hasMore: page * limit < checkHasMore,
-                totalCount: checkHasMore
+                ...t,
+                computedStatus,
+                confirmedAmount,
+                processingAmount,
+                remainingAmount: (t.pricePerWeek * t.tenor) - confirmedAmount - processingAmount,
+                payments: t.payments.map((p) => ({
+                    ...p,
+                    weekNumbers: typeof p.weekNumbers === "string" ? JSON.parse(p.weekNumbers) : p.weekNumbers
+                }))
             }
-        }, 86400) // 24 hours TTL
+        })
 
-        return NextResponse.json(cachedResponse)
+        return NextResponse.json({
+            transactions,
+            hasMore: page * limit < checkHasMore,
+            totalCount: checkHasMore
+        })
     } catch (error) {
         console.error("Error fetching paginated report transactions:", error)
         return NextResponse.json({ error: "Failed to fetch transactions" }, { status: 500 })
