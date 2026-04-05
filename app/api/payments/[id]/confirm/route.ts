@@ -20,7 +20,10 @@ export async function POST(request: Request, { params }: { params: { id: string 
       },
     })
     
-    return NextResponse.json(payment)
+    return NextResponse.json({
+      ...payment,
+      weekNumbers: typeof payment.weekNumbers === "string" ? JSON.parse(payment.weekNumbers) : payment.weekNumbers
+    })
   } catch (error) {
     console.error("Error confirming payment:", error)
     return NextResponse.json({ error: "Failed to confirm payment" }, { status: 500 })

@@ -41,9 +41,14 @@ export default async function PaymentPage({ params }: PaymentPageProps) {
     redirect("/home")
   }
 
+  const formattedPayment = {
+    ...payment,
+    weekNumbers: typeof payment.weekNumbers === "string" ? JSON.parse(payment.weekNumbers) : payment.weekNumbers
+  }
+
   return (
     <div className="container mx-auto px-4 py-6">
-      <PaymentDetail payment={payment} isAdmin={session.user.role === "admin"} paymentMethod={paymentMethod}/>
+      <PaymentDetail payment={formattedPayment} isAdmin={session.user.role === "admin"} paymentMethod={paymentMethod}/>
     </div>
   )
 }

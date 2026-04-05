@@ -39,8 +39,12 @@ export async function GET(request: Request) {
         createdAt: "desc",
       },
     })
+    const formattedPayments = payments.map((p: any) => ({
+      ...p,
+      weekNumbers: typeof p.weekNumbers === "string" ? JSON.parse(p.weekNumbers) : p.weekNumbers
+    }))
 
-    return NextResponse.json(payments)
+    return NextResponse.json(formattedPayments)
   } catch (error) {
     console.error("Error fetching payments:", error)
     return NextResponse.json({ error: "Failed to fetch payments" }, { status: 500 })

@@ -52,9 +52,20 @@ export default async function MemberPage({ params }: MemberPageProps) {
     notFound()
   }
 
+  const formattedUser = {
+    ...user,
+    transactions: user.transactions.map((t: any) => ({
+      ...t,
+      payments: t.payments.map((p: any) => ({
+        ...p,
+        weekNumbers: typeof p.weekNumbers === "string" ? JSON.parse(p.weekNumbers) : p.weekNumbers
+      }))
+    }))
+  }
+
   return (
     <div className="container mx-auto px-4 py-6">
-      <MemberDetail user={user} />
+      <MemberDetail user={formattedUser} />
     </div>
   )
 }

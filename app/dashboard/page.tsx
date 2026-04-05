@@ -108,6 +108,15 @@ export default async function DashboardPage() {
     }
   })
 
+  // Format weekNumbers payload to array because we pass it to the UI
+  const formatPayments = (transactions: any[]) => transactions.map(t => ({
+    ...t,
+    payments: t.payments.map((p: any) => ({
+      ...p,
+      weekNumbers: typeof p.weekNumbers === "string" ? JSON.parse(p.weekNumbers) : p.weekNumbers
+    }))
+  }))
+
   return (
     <div className="container mx-auto px-4 py-6">
       <h1 className="text-2xl font-bold mb-6">Dashboard Admin</h1>
@@ -118,8 +127,11 @@ export default async function DashboardPage() {
           transactionCount,
           totalPayments: totalPayments._sum.amount || 0,
         }}
-        recentTransactions={recentTransactions}
-        pendingPayments={pendingPayments}
+        recentTransactions={formatPayments(recentTransactions)}
+        pendingPayments={pendingPayments.map((p: any) => ({
+          ...p,
+          weekNumbers: typeof p.weekNumbers === "string" ? JSON.parse(p.weekNumbers) : p.weekNumbers
+        }))}
         topResellers={topResellersWithTotal}
       />
     </div>

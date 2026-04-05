@@ -24,7 +24,10 @@ export async function POST(request: Request, { params }: { params: { id: string 
       },
     })
     
-    return NextResponse.json(payment)
+    return NextResponse.json({
+      ...payment,
+      weekNumbers: typeof payment.weekNumbers === "string" ? JSON.parse(payment.weekNumbers) : payment.weekNumbers
+    })
   } catch (error) {
     console.error("Error rejecting payment:", error)
     return NextResponse.json({ error: "Failed to reject payment" }, { status: 500 })

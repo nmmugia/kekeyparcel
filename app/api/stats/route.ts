@@ -59,12 +59,25 @@ export async function GET() {
     ])
 
     // Calculate total amount for each reseller (done in JS, not Postgres)
-    const topResellersWithTotal = topResellers.map((reseller) => {
-      const totalAmount = reseller.transactions.reduce((sum, transaction) => {
-        return sum + transaction.payments.reduce((paymentSum, payment) => paymentSum + payment.amount, 0)
+    const topResellersWithTotal = topResellers.map((reseller: any) => {
+      const totalAmount = reseller.transactions.reduce((sum: number, transaction: any) => {
+        return sum + transaction.payments.reduce((paymentSum: number, payment: any) => paymentSum + payment.amount, 0)
       }, 0)
       return { ...reseller, totalAmount }
     })
+
+    const parsedRecentTransactions = recentTransactions.map((t: any) => ({
+      ...t,
+      payments: t.payments.map((p: any) => ({
+        ...p,
+        weekNumbers: typeof p.weekNumbers === "string" ? JSON.parse(p.weekNumbers) : p.weekNumbers
+      }))
+    }))
+
+    const parsedPendingPayments = pendingPayments.map((p: any) => ({
+      ...p,
+      weekNumbers: typeof p.weekNumbers === "string" ? JSON.parse(p.weekNumbers) : p.weekNumbers
+    }))
 
     const stats = {
       stats: {
@@ -73,8 +86,8 @@ export async function GET() {
         transactionCount,
         totalPayments: totalPayments._sum.amount || 0,
       },
-      recentTransactions,
-      pendingPayments,
+      recentTransactions: parsedRecentTransactions,
+      pendingPayments: parsedPendingPayments,
       topResellers: topResellersWithTotal,
     }
 
