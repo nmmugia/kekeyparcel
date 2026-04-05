@@ -30,10 +30,13 @@ export async function getCachedData<T>(key: string, fetcher: () => Promise<T>, t
         const data = await fetcher()
         console.log(`[Upstash ❌ MISS] ${key} executing via Neon - ${Date.now() - fetchStart}ms`)
 
-        // Save to cache asynchronously so we don't stall the request blocking to save
-        redis.set(key, data, { ex: ttl }).catch((err) => {
+        // Save to cache. Await the result to prevent trailing promises from keeping the Vercel lambda hot
+        // and burning unnecessary CPU time while waiting for Node.js event loop to drain.
+        try {
+            await redis.set(key, data, { ex: ttl })
+        } catch (err) {
             console.error(`[Upstash Error] Failed to write cache for ${key}:`, err)
-        })
+        }
 
         return data
     } catch (error) {
