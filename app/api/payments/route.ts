@@ -96,8 +96,8 @@ export async function GET(request: Request) {
     if (search) {
       where.transaction = {
         OR: [
-          { packageName: { contains: search, mode: "insensitive" } },
-          { customerName: { contains: search, mode: "insensitive" } },
+          { packageName: { contains: search } },
+          { customerName: { contains: search } },
         ]
       }
     }
