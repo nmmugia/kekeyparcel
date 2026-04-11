@@ -27,8 +27,8 @@ export async function GET(request: Request) {
         results = await db.package.findMany({
           where: {
             OR: [
-              { name: { contains: query, mode: "insensitive" } },
-              { description: { contains: query, mode: "insensitive" } },
+              { name: { contains: query } },
+              { description: { contains: query } },
             ],
           },
           take: 10,
@@ -42,9 +42,9 @@ export async function GET(request: Request) {
         results = await db.transaction.findMany({
           where: {
             OR: [
-              { packageName: { contains: query, mode: "insensitive" } },
-              { customerName: { contains: query, mode: "insensitive" } },
-              { resellerName: { contains: query, mode: "insensitive" } },
+              { packageName: { contains: query } },
+              { customerName: { contains: query } },
+              { resellerName: { contains: query } },
             ],
           },
           take: 10,
@@ -68,8 +68,8 @@ export async function GET(request: Request) {
           where: {
             role: "reseller",
             OR: [
-              { name: { contains: query, mode: "insensitive" } },
-              { email: { contains: query, mode: "insensitive" } },
+              { name: { contains: query } },
+              { email: { contains: query } },
             ],
           },
           take: 10,
@@ -90,8 +90,8 @@ export async function GET(request: Request) {
         // Filter payments based on user role
         const paymentWhere: any = {
           OR: [
-            { transaction: { packageName: { contains: query, mode: "insensitive" } } },
-            { transaction: { customerName: { contains: query, mode: "insensitive" } } },
+            { transaction: { packageName: { contains: query } } },
+            { transaction: { customerName: { contains: query } } },
           ],
         }
 
@@ -113,8 +113,8 @@ export async function GET(request: Request) {
         const packages = await db.package.findMany({
           where: {
             OR: [
-              { name: { contains: query, mode: "insensitive" } },
-              { description: { contains: query, mode: "insensitive" } },
+              { name: { contains: query } },
+              { description: { contains: query } },
             ],
           },
           take: 5,
@@ -125,8 +125,8 @@ export async function GET(request: Request) {
 
         const transactionWhere: any = {
           OR: [
-            { packageName: { contains: query, mode: "insensitive" } },
-            { customerName: { contains: query, mode: "insensitive" } },
+            { packageName: { contains: query } },
+            { customerName: { contains: query } },
           ],
         }
 
@@ -157,8 +157,8 @@ export async function GET(request: Request) {
             where: {
               role: "reseller",
               OR: [
-                { name: { contains: query, mode: "insensitive" } },
-                { email: { contains: query, mode: "insensitive" } },
+                { name: { contains: query } },
+                { email: { contains: query } },
               ],
             },
             take: 5,
