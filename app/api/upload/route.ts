@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
-import { uploadFile } from "@/lib/s3-upload"
+import { uploadFile } from "@/lib/google-drive-upload"
 
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions)
@@ -22,7 +22,8 @@ export async function POST(request: Request) {
     const bytes = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
 
-    // Upload file to S3 or local storage
+    // Upload file to Google Drive (new uploads)
+    // Old Supabase URLs in the database will continue to work
     const fileUrl = await uploadFile(buffer, file.name, file.type)
 
     return NextResponse.json({ url: fileUrl })
