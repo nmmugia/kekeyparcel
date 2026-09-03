@@ -9,7 +9,7 @@ function getDriveClient() {
       client_email: process.env.GOOGLE_DRIVE_CLIENT_EMAIL,
       private_key: process.env.GOOGLE_DRIVE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
     },
-    scopes: ["https://www.googleapis.com/auth/drive.file"],
+    scopes: ["https://www.googleapis.com/auth/drive"],
   })
 
   return google.drive({ version: "v3", auth })
